@@ -1118,6 +1118,74 @@ func (v *View) Start(usePlugin bool) bool {
 	return false
 }
 
+// Format file
+func (v *View) Format(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("Format", v) {
+		return false
+	}
+	if v.Buf.FileType() == "go" {
+		_, err := exec.LookPath("goimports")
+		if err != nil {
+			_, _ = exec.Command("go", "get", "-u", "golang.org/x/tools/cmd/...").CombinedOutput()
+		}
+		cmd := exec.Command("goimports")
+		in, _ := cmd.StdinPipe()
+		fmt.Fprint(in, v.Buf.String())
+		in.Close()
+		data, err := cmd.CombinedOutput()
+		if err != nil {
+			messenger.Message(fmt.Sprintf("%s %s", data, err))
+			return true
+		}
+		v.Buf.ApplyDiff(string(data))
+	}
+	if v.Buf.FileType() == "json" {
+		var j bytes.Buffer
+		err := json.Indent(&j, []byte(v.Buf.String()), "", "\t")
+		v.Cursor.X = 0
+		v.Cursor.Y = 0
+		if err != nil {
+			messenger.Message(err)
+		} else {
+			v.Buf.ApplyDiff(j.String())
+		}
+	}
+	if v.Buf.FileType() == "xml" {
+		b := &bytes.Buffer{}
+		decoder := xml.NewDecoder(bytes.NewReader([]byte(v.Buf.String())))
+		encoder := xml.NewEncoder(b)
+		encoder.Indent("", "  ")
+		for {
+			token, err := decoder.Token()
+			if err == io.EOF {
+				encoder.Flush()
+				break
+			}
+			if err != nil {
+				messenger.Message(err)
+				b.Reset()
+				b.WriteString(v.Buf.String())
+				break
+			}
+			err = encoder.EncodeToken(token)
+			if err != nil {
+				messenger.Message(err)
+				b.Reset()
+				b.WriteString(v.Buf.String())
+				break
+			}
+		}
+		v.Cursor.X = 0
+		v.Cursor.Y = 0
+		v.Buf.ApplyDiff(b.String())
+	}
+
+	if usePlugin {
+		return PostActionCall("Format", v)
+	}
+	return true
+}
+
 // End moves the viewport to the end of the buffer
 func (v *View) End(usePlugin bool) bool {
 	if usePlugin && !PreActionCall("End", v) {
