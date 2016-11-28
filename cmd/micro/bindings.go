@@ -432,6 +432,7 @@ func DefaultBindings() map[string]string {
 		"CtrlJ":  "PlayMacro",
 
 		"AltL":      "Format",
+		"CtrlL":      "Format",
 		"AltN":      "GotoFile",
 		"CtrlN":     "GotoFile",
 		"AltRight":  "NextLoc",
