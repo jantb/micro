@@ -13,6 +13,7 @@ import (
 	"github.com/yuin/gopher-lua"
 	"github.com/zyedidia/clipboard"
 	"io"
+	"io/ioutil"
 	"os/exec"
 )
 
@@ -462,6 +463,7 @@ func (v *View) InsertSpace(usePlugin bool) bool {
 	v.Cursor.Right()
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
 	v.Vet()
+	v.Lint()
 	if usePlugin {
 		return PostActionCall("InsertSpace", v)
 	}
@@ -498,6 +500,7 @@ func (v *View) InsertNewline(usePlugin bool) bool {
 	v.Cursor.LastVisualX = v.Cursor.GetVisualX()
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
 	v.Vet()
+	v.Lint()
 	if usePlugin {
 		return PostActionCall("InsertNewline", v)
 	}
@@ -545,6 +548,7 @@ func (v *View) Backspace(usePlugin bool) bool {
 	v.Cursor.LastVisualX = v.Cursor.GetVisualX()
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
 	v.Vet()
+	v.Lint()
 	if usePlugin {
 		return PostActionCall("Backspace", v)
 	}
@@ -564,6 +568,7 @@ func (v *View) DeleteWordRight(usePlugin bool) bool {
 	}
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
 	v.Vet()
+	v.Lint()
 	if usePlugin {
 		return PostActionCall("DeleteWordRight", v)
 	}
@@ -583,6 +588,7 @@ func (v *View) DeleteWordLeft(usePlugin bool) bool {
 	}
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
 	v.Vet()
+	v.Lint()
 	if usePlugin {
 		return PostActionCall("DeleteWordLeft", v)
 	}
@@ -606,6 +612,7 @@ func (v *View) Delete(usePlugin bool) bool {
 	}
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
 	v.Vet()
+	v.Lint()
 	if usePlugin {
 		return PostActionCall("Delete", v)
 	}
@@ -860,6 +867,7 @@ func (v *View) Undo(usePlugin bool) bool {
 	v.Buf.Undo()
 	messenger.Message("Undid action")
 	v.Vet()
+	v.Lint()
 	if usePlugin {
 		return PostActionCall("Undo", v)
 	}
@@ -875,6 +883,7 @@ func (v *View) Redo(usePlugin bool) bool {
 	v.Buf.Redo()
 	messenger.Message("Redid action")
 	v.Vet()
+	v.Lint()
 	if usePlugin {
 		return PostActionCall("Redo", v)
 	}
@@ -926,6 +935,7 @@ func (v *View) CutLine(usePlugin bool) bool {
 	v.Cursor.ResetSelection()
 	messenger.Message("Cut line")
 	v.Vet()
+	v.Lint()
 	if usePlugin {
 		return PostActionCall("CutLine", v)
 	}
@@ -951,6 +961,7 @@ func (v *View) Cut(usePlugin bool) bool {
 		return true
 	}
 	v.Vet()
+	v.Lint()
 	return false
 }
 
@@ -970,6 +981,7 @@ func (v *View) DuplicateLine(usePlugin bool) bool {
 
 	messenger.Message("Duplicated line")
 	v.Vet()
+	v.Lint()
 	if usePlugin {
 		return PostActionCall("DuplicateLine", v)
 	}
@@ -991,6 +1003,7 @@ func (v *View) DeleteLine(usePlugin bool) bool {
 	messenger.Message("Deleted line")
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
 	v.Vet()
+	v.Lint()
 	if usePlugin {
 		return PostActionCall("DeleteLine", v)
 	}
@@ -1031,6 +1044,7 @@ func (v *View) MoveLinesUp(usePlugin bool) bool {
 	v.Buf.IsModified = true
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
 	v.Vet()
+	v.Lint()
 	if usePlugin {
 		return PostActionCall("MoveLinesUp", v)
 	}
@@ -1197,10 +1211,46 @@ func (v *View) Vet() {
 		in.Close()
 		data, err := cmd.CombinedOutput()
 		if err != nil {
-			x, _ := strconv.Atoi(strings.Split(string(data), ":")[1])
-			v.GutterMessage("VetErrors", x, strings.Split(string(data), ":")[3], GutterError)
+			v.ClearGutterMessages("VetErrors")
+			errors := strings.Split(string(data), "\n")
+			for _, value := range errors {
+				if strings.TrimSpace(value) == "" {
+					continue
+				}
+				x, _ := strconv.Atoi(strings.Split(value, ":")[1])
+				v.GutterMessage("VetErrors", x, strings.Split(value, ":")[3], GutterError)
+			}
 		} else {
 			v.ClearGutterMessages("VetErrors")
+		}
+	}
+}
+
+// Lint checks for errors
+func (v *View) Lint() {
+	if v.Buf.FileType() == "go" {
+		_, err := exec.LookPath("golint")
+		if err != nil {
+			_, _ = exec.Command("go", "get", "-u", "github.com/golang/lint/golint").CombinedOutput()
+		}
+		f, _ := ioutil.TempFile("", "lint")
+		defer os.Remove(f.Name())
+		ioutil.WriteFile(f.Name(), []byte(v.Buf.String()), 0644)
+		cmd := exec.Command("golint", "-set_exit_status", f.Name())
+		data, err := cmd.CombinedOutput()
+		if err != nil {
+			v.ClearGutterMessages("LintErrors")
+			errors := strings.Split(string(data), "\n")
+
+			for _, value := range errors[:len(errors)-2] {
+				if strings.TrimSpace(value) == "" {
+					continue
+				}
+				x, _ := strconv.Atoi(strings.Split(value, ":")[1])
+				v.GutterMessage("LintErrors", x, strings.Split(value, ":")[3], GutterWarning)
+			}
+		} else {
+			v.ClearGutterMessages("LintErrors")
 		}
 	}
 }

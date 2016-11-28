@@ -166,6 +166,7 @@ func (v *View) paste(clip string) {
 	clip = strings.Replace(clip, "\n", "\n"+leadingWS, -1)
 	v.Buf.Insert(v.Cursor.Loc, clip)
 	v.Vet()
+	v.Lint()
 	v.Cursor.Loc = v.Cursor.Loc.Move(Count(clip), v.Buf)
 	v.freshClip = false
 	messenger.Message("Pasted clipboard")
@@ -254,6 +255,8 @@ func (v *View) Open(filename string) {
 		buf = NewBuffer(file, filename)
 	}
 	v.OpenBuffer(buf)
+	v.Lint()
+	v.Vet()
 }
 
 // CloseBuffer performs any closing functions on the buffer
@@ -481,6 +484,7 @@ func (v *View) HandleEvent(event tcell.Event) {
 			}
 			v.Buf.Insert(v.Cursor.Loc, string(e.Rune()))
 			v.Vet()
+			v.Lint()
 			v.Cursor.Right()
 
 			for _, pl := range loadedPlugins {
