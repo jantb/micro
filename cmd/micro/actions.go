@@ -6,10 +6,14 @@ import (
 	"strings"
 	"time"
 
+	"bytes"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"github.com/yuin/gopher-lua"
 	"github.com/zyedidia/clipboard"
+	"io"
+	"os/exec"
 )
 
 // PreActionCall executes the lua pre callback if possible
@@ -1178,6 +1182,52 @@ func (v *View) Start(usePlugin bool) bool {
 		return PostActionCall("Start", v)
 	}
 	return false
+}
+
+// Definition goes to definition
+func (v *View) Definition(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("Definition", v) {
+		return false
+	}
+	type Loc struct {
+		Objpos string `json:"objpos"`
+		Desc   string `json:"desc"`
+	}
+	if v.Buf.FileType() == "go" {
+		offset := ByteOffset(v.Cursor.Loc, v.Buf)
+		_, err := exec.LookPath("goimports")
+		if err != nil {
+			_, _ = exec.Command("go", "get", "-u", "golang.org/x/tools/cmd/...").CombinedOutput()
+		}
+		cmd := exec.Command("guru", "-modified", "-json", "definition", fmt.Sprintf("%s:#%d", v.Buf.Path, offset))
+		in, _ := cmd.StdinPipe()
+		fmt.Fprint(in, v.Buf.GetName()+"\n")
+		fmt.Fprintf(in, "%d\n", len(v.Buf.String()))
+		fmt.Fprint(in, v.Buf.String())
+		in.Close()
+		data, err := cmd.CombinedOutput()
+		if err != nil {
+			messenger.Message(fmt.Sprintf("%s %s", data, err))
+			return true
+		}
+		var loc = Loc{}
+		err = json.Unmarshal(data, &loc)
+		if err != nil {
+			messenger.Message(string(data))
+		} else {
+			v.Open(strings.Split(loc.Objpos, ":")[0])
+			x, _ := strconv.Atoi(strings.Split(loc.Objpos, ":")[2])
+			y, _ := strconv.Atoi(strings.Split(loc.Objpos, ":")[1])
+			v.Buf.Cursor.X = x - 1
+			v.Buf.Cursor.Y = y - 1
+			v.Buf.Cursor.Relocate()
+			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+		}
+	}
+	if usePlugin {
+		return PostActionCall("Definition", v)
+	}
+	return true
 }
 
 // Format file
