@@ -1255,6 +1255,33 @@ func (v *View) Lint() {
 	}
 }
 
+// Rename opens a prompt and renames
+func (v *View) Rename(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("Rename", v) {
+		return false
+	}
+	if v.Buf.FileType() == "go" {
+		response, _ := messenger.Prompt("Rename:", "", "", NoCompletion)
+		offset := ByteOffset(v.Cursor.Loc, v.Buf)
+		_, err := exec.LookPath("gorename")
+		if err != nil {
+			_, _ = exec.Command("go", "get", "-u", "golang.org/x/tools/cmd/...").CombinedOutput()
+		}
+
+		data, err := exec.Command("gorename", "--offset", fmt.Sprintf("%s:#%d", v.Buf.Path, offset), "--to", response).CombinedOutput()
+		if err != nil {
+			messenger.Message(fmt.Sprintf("%s %s", data, err))
+			return true
+		}
+		v.ReOpen()
+		messenger.Message(string(data))
+	}
+	if usePlugin {
+		return PostActionCall("Rename", v)
+	}
+	return true
+}
+
 // Definition show declaration of selected identifier
 func (v *View) Definition(usePlugin bool) bool {
 	if usePlugin && !PreActionCall("Definition", v) {

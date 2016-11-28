@@ -95,6 +95,7 @@ var bindingActions = map[string]func(*View, bool) bool{
 	"GotoDefinition":      (*View).Definition,
 	"Referrers":           (*View).Referrers,
 	"Describe":            (*View).Describe,
+	"Rename":              (*View).Rename,
 
 	// This was changed to InsertNewline but I don't want to break backwards compatibility
 	"InsertEnter": (*View).InsertNewline,
@@ -435,6 +436,7 @@ func DefaultBindings() map[string]string {
 		"AltRight": "NextLoc",
 		"AltLeft":  "PrevLoc",
 		"F4":       "GotoDefinition",
+		"F6":       "Rename",
 		"F7":       "Referrers",
 		"CtrlP":    "Describe",
 
