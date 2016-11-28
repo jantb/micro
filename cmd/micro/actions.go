@@ -461,7 +461,7 @@ func (v *View) InsertSpace(usePlugin bool) bool {
 	v.Buf.Insert(v.Cursor.Loc, " ")
 	v.Cursor.Right()
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
-
+	v.Vet()
 	if usePlugin {
 		return PostActionCall("InsertSpace", v)
 	}
@@ -497,7 +497,7 @@ func (v *View) InsertNewline(usePlugin bool) bool {
 	}
 	v.Cursor.LastVisualX = v.Cursor.GetVisualX()
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
-
+	v.Vet()
 	if usePlugin {
 		return PostActionCall("InsertNewline", v)
 	}
@@ -544,7 +544,7 @@ func (v *View) Backspace(usePlugin bool) bool {
 	}
 	v.Cursor.LastVisualX = v.Cursor.GetVisualX()
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
-
+	v.Vet()
 	if usePlugin {
 		return PostActionCall("Backspace", v)
 	}
@@ -563,7 +563,7 @@ func (v *View) DeleteWordRight(usePlugin bool) bool {
 		v.Cursor.ResetSelection()
 	}
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
-
+	v.Vet()
 	if usePlugin {
 		return PostActionCall("DeleteWordRight", v)
 	}
@@ -582,7 +582,7 @@ func (v *View) DeleteWordLeft(usePlugin bool) bool {
 		v.Cursor.ResetSelection()
 	}
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
-
+	v.Vet()
 	if usePlugin {
 		return PostActionCall("DeleteWordLeft", v)
 	}
@@ -605,7 +605,7 @@ func (v *View) Delete(usePlugin bool) bool {
 		}
 	}
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
-
+	v.Vet()
 	if usePlugin {
 		return PostActionCall("Delete", v)
 	}
@@ -859,7 +859,7 @@ func (v *View) Undo(usePlugin bool) bool {
 
 	v.Buf.Undo()
 	messenger.Message("Undid action")
-
+	v.Vet()
 	if usePlugin {
 		return PostActionCall("Undo", v)
 	}
@@ -874,7 +874,7 @@ func (v *View) Redo(usePlugin bool) bool {
 
 	v.Buf.Redo()
 	messenger.Message("Redid action")
-
+	v.Vet()
 	if usePlugin {
 		return PostActionCall("Redo", v)
 	}
@@ -925,7 +925,7 @@ func (v *View) CutLine(usePlugin bool) bool {
 	v.Cursor.DeleteSelection()
 	v.Cursor.ResetSelection()
 	messenger.Message("Cut line")
-
+	v.Vet()
 	if usePlugin {
 		return PostActionCall("CutLine", v)
 	}
@@ -950,7 +950,7 @@ func (v *View) Cut(usePlugin bool) bool {
 		}
 		return true
 	}
-
+	v.Vet()
 	return false
 }
 
@@ -969,7 +969,7 @@ func (v *View) DuplicateLine(usePlugin bool) bool {
 	}
 
 	messenger.Message("Duplicated line")
-
+	v.Vet()
 	if usePlugin {
 		return PostActionCall("DuplicateLine", v)
 	}
@@ -990,7 +990,7 @@ func (v *View) DeleteLine(usePlugin bool) bool {
 	v.Cursor.ResetSelection()
 	messenger.Message("Deleted line")
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
-
+	v.Vet()
 	if usePlugin {
 		return PostActionCall("DeleteLine", v)
 	}
@@ -1030,7 +1030,7 @@ func (v *View) MoveLinesUp(usePlugin bool) bool {
 	}
 	v.Buf.IsModified = true
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
-
+	v.Vet()
 	if usePlugin {
 		return PostActionCall("MoveLinesUp", v)
 	}
@@ -1182,6 +1182,27 @@ func (v *View) Start(usePlugin bool) bool {
 		return PostActionCall("Start", v)
 	}
 	return false
+}
+
+// Vet checks for errors
+func (v *View) Vet() {
+	if v.Buf.FileType() == "go" {
+		_, err := exec.LookPath("goimports")
+		if err != nil {
+			_, _ = exec.Command("go", "get", "-u", "golang.org/x/tools/cmd/...").CombinedOutput()
+		}
+		cmd := exec.Command("goimports")
+		in, _ := cmd.StdinPipe()
+		fmt.Fprint(in, v.Buf.String())
+		in.Close()
+		data, err := cmd.CombinedOutput()
+		if err != nil {
+			x, _ := strconv.Atoi(strings.Split(string(data), ":")[1])
+			v.GutterMessage("VetErrors", x, strings.Split(string(data), ":")[3], GutterError)
+		} else {
+			v.ClearGutterMessages("VetErrors")
+		}
+	}
 }
 
 // Definition show declaration of selected identifier
