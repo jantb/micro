@@ -1184,7 +1184,7 @@ func (v *View) Start(usePlugin bool) bool {
 	return false
 }
 
-// Definition goes to definition
+// Definition show declaration of selected identifier
 func (v *View) Definition(usePlugin bool) bool {
 	if usePlugin && !PreActionCall("Definition", v) {
 		return false
@@ -1195,7 +1195,7 @@ func (v *View) Definition(usePlugin bool) bool {
 	}
 	if v.Buf.FileType() == "go" {
 		offset := ByteOffset(v.Cursor.Loc, v.Buf)
-		_, err := exec.LookPath("goimports")
+		_, err := exec.LookPath("guru")
 		if err != nil {
 			_, _ = exec.Command("go", "get", "-u", "golang.org/x/tools/cmd/...").CombinedOutput()
 		}
@@ -1220,12 +1220,77 @@ func (v *View) Definition(usePlugin bool) bool {
 			y, _ := strconv.Atoi(strings.Split(loc.Objpos, ":")[1])
 			v.Buf.Cursor.X = x - 1
 			v.Buf.Cursor.Y = y - 1
-			v.Buf.Cursor.Relocate()
 			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
 		}
 	}
 	if usePlugin {
 		return PostActionCall("Definition", v)
+	}
+	return true
+}
+
+// Referrers show all refs to entity denoted by selected identifier
+func (v *View) Referrers(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("Referrers", v) {
+		return false
+	}
+	type Loc []struct {
+		Objpos  string `json:"objpos,omitempty"`
+		Desc    string `json:"desc,omitempty"`
+		Package string `json:"package,omitempty"`
+		Refs    []struct {
+			Pos  string `json:"pos"`
+			Text string `json:"text"`
+		} `json:"refs,omitempty"`
+	}
+	if v.Buf.FileType() == "go" {
+		offset := ByteOffset(v.Cursor.Loc, v.Buf)
+		_, err := exec.LookPath("goimports")
+		if err != nil {
+			_, _ = exec.Command("go", "get", "-u", "golang.org/x/tools/cmd/...").CombinedOutput()
+		}
+		cmd := exec.Command("guru", "-modified", "-json", "referrers", fmt.Sprintf("%s:#%d", v.Buf.Path, offset))
+		in, _ := cmd.StdinPipe()
+		fmt.Fprint(in, v.Buf.GetName()+"\n")
+		fmt.Fprintf(in, "%d\n", len(v.Buf.String()))
+		fmt.Fprint(in, v.Buf.String())
+		in.Close()
+		data, err := cmd.CombinedOutput()
+		if err != nil {
+			messenger.Message(fmt.Sprintf("%s %s", data, err))
+			return true
+		}
+
+		data = []byte(fmt.Sprintf("[%s]", strings.Replace(string(data), "}\n{", "},{", -1)))
+
+		var loc = Loc{}
+		err = json.Unmarshal(data, &loc)
+		if err != nil {
+			TermMessage(string(data))
+			messenger.Message(err)
+		} else {
+			autocomplete.Open(func(v *View) (messages Messages) {
+				messages = Messages{}
+				loc = loc[1:]
+				for _, refs := range loc {
+					for _, ref := range refs.Refs {
+						messages = append(messages, Message{Value1: fmt.Sprintf("%s (%s)", strings.TrimSpace(ref.Text), ref.Pos), Value2: []byte(ref.Pos)})
+					}
+				}
+				return messages
+			}, func(message Message) {
+				l := string(message.Value2)
+				v.Open(strings.Split(l, ":")[0])
+				x, _ := strconv.Atoi(strings.Split(l, ":")[2])
+				y, _ := strconv.Atoi(strings.Split(l, ":")[1])
+				v.Buf.Cursor.X = x - 1
+				v.Buf.Cursor.Y = y - 1
+				cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+			}, nil, v)
+		}
+	}
+	if usePlugin {
+		return PostActionCall("Referrers", v)
 	}
 	return true
 }
