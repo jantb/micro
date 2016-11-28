@@ -1255,6 +1255,106 @@ func (v *View) Lint() {
 	}
 }
 
+// Autocomplete box
+func (v *View) Autocomplete(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("Autocomplete", v) {
+		return false
+	}
+	if v.Buf.FileType() == "go" {
+		_, err := exec.LookPath("gocode")
+		if err != nil {
+			_, _ = exec.Command("go", "get", "-u", "github.com/nsf/gocode").CombinedOutput()
+		}
+		getMessages := func(v *View) (messages Messages) {
+			offset := ByteOffset(v.Cursor.Loc, v.Buf)
+			cmd := exec.Command("gocode", "-f=csv", "autocomplete", fmt.Sprintf("%d", offset))
+			in, _ := cmd.StdinPipe()
+			fmt.Fprint(in, v.Buf.String())
+			in.Close()
+			b, err := cmd.CombinedOutput()
+			if err != nil {
+				messenger.Message(fmt.Sprintf("%s %s", b, err))
+				return Messages{}
+			}
+
+			messages = Messages{}
+			for _, value := range strings.Split(string(b), "\n") {
+				split := strings.Split(value, ",,")
+				if len(split) != 3 {
+					continue
+				}
+				messages = append(messages, Message{Value1: fmt.Sprintf("%s %s %s", split[0], split[1], split[2]), Value2: []byte(value)})
+			}
+			return messages
+		}
+
+		acceptEnter := func(message Message) {
+			split := strings.Split(string(message.Value2), ",,")
+			if split[0] == "func" {
+				c := v.Buf.Cursor
+				c.Left()
+				if IsWordChar(string(c.RuneUnder(c.X))) {
+					c.SelectWord()
+					c.DeleteSelection()
+				}
+				c.Right()
+
+				v.Buf.Insert(c.Loc, split[1]+"()")
+				c.WordRight()
+				c.Right()
+				return
+			}
+			c := v.Buf.Cursor
+			c.Left()
+			if IsWordChar(string(c.RuneUnder(c.X))) {
+				c.SelectWord()
+				c.DeleteSelection()
+			}
+			c.Right()
+			if len(split) > 2 {
+				v.Buf.Insert(c.Loc, split[1])
+			}
+			c.WordRight()
+			c.Right()
+			v.Vet()
+			v.Lint()
+		}
+		acceptTab := func(message Message) {
+			split := strings.Split(string(message.Value2), ",,")
+			if split[0] == "func" {
+				c := v.Buf.Cursor
+				c.Left()
+				if IsWordChar(string(c.RuneUnder(c.X))) {
+					c.SelectWord()
+					c.DeleteSelection()
+				} else {
+					c.Right()
+				}
+
+				v.Buf.Insert(c.Loc, split[1]+"()")
+				c.WordRight()
+				c.Right()
+				return
+			}
+			c := v.Buf.Cursor
+			c.Left()
+			if IsWordChar(string(c.RuneUnder(c.X))) {
+				c.SelectWord()
+				c.DeleteSelection()
+			}
+			c.Right()
+
+			v.Buf.Insert(c.Loc, split[1])
+			c.WordRight()
+			c.Right()
+			v.Vet()
+			v.Lint()
+		}
+		autocomplete.OpenNoPrompt(getMessages, acceptEnter, acceptTab, v)
+	}
+	return true
+}
+
 // Rename opens a prompt and renames
 func (v *View) Rename(usePlugin bool) bool {
 	if usePlugin && !PreActionCall("Rename", v) {
