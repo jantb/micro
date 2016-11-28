@@ -666,7 +666,7 @@ func (v *View) OutdentLine(usePlugin bool) bool {
 			break
 		}
 		v.Buf.Remove(Loc{0, v.Cursor.Y}, Loc{1, v.Cursor.Y})
-		v.Cursor.X -= 1
+		v.Cursor.X--
 	}
 	v.Cursor.Relocate()
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
@@ -1026,8 +1026,8 @@ func (v *View) MoveLinesUp(usePlugin bool) bool {
 			v.Cursor.CurSelection[1].Y,
 		)
 		v.Cursor.UpN(1)
-		v.Cursor.CurSelection[0].Y -= 1
-		v.Cursor.CurSelection[1].Y -= 1
+		v.Cursor.CurSelection[0].Y --
+		v.Cursor.CurSelection[1].Y --
 		messenger.Message("Moved up selected line(s)")
 	} else {
 		if v.Cursor.Loc.Y == 0 {
@@ -1067,8 +1067,8 @@ func (v *View) MoveLinesDown(usePlugin bool) bool {
 			v.Cursor.CurSelection[1].Y,
 		)
 		v.Cursor.DownN(1)
-		v.Cursor.CurSelection[0].Y += 1
-		v.Cursor.CurSelection[1].Y += 1
+		v.Cursor.CurSelection[0].Y ++
+		v.Cursor.CurSelection[1].Y ++
 		messenger.Message("Moved down selected line(s)")
 	} else {
 		if v.Cursor.Loc.Y >= len(v.Buf.lines)-1 {
