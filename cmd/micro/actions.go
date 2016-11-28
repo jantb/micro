@@ -1229,6 +1229,55 @@ func (v *View) Definition(usePlugin bool) bool {
 	return true
 }
 
+// Describe describe selected syntax: definition, methods, etc
+func (v *View) Describe(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("Describe", v) {
+		return false
+	}
+	type Info struct {
+		Desc   string `json:"desc"`
+		Pos    string `json:"pos"`
+		Detail string `json:"detail"`
+		Value  struct {
+			Type   string `json:"type"`
+			Objpos string `json:"objpos"`
+		} `json:"value"`
+	}
+	if v.Buf.FileType() == "go" {
+		offset := ByteOffset(v.Cursor.Loc, v.Buf)
+		_, err := exec.LookPath("guru")
+		if err != nil {
+			_, _ = exec.Command("go", "get", "-u", "golang.org/x/tools/cmd/...").CombinedOutput()
+		}
+		cmd := exec.Command("guru", "-modified", "-json", "describe", fmt.Sprintf("%s:#%d", v.Buf.Path, offset))
+		in, _ := cmd.StdinPipe()
+		fmt.Fprint(in, v.Buf.GetName()+"\n")
+		fmt.Fprintf(in, "%d\n", len(v.Buf.String()))
+		fmt.Fprint(in, v.Buf.String())
+		in.Close()
+		data, err := cmd.CombinedOutput()
+		if err != nil {
+			messenger.Message(fmt.Sprintf("%s %s", data, err))
+			return true
+		}
+		var info = Info{}
+		err = json.Unmarshal(data, &info)
+		if err != nil {
+			messenger.Message(string(data))
+		} else {
+			autocomplete.OpenNoPrompt(func(v *View) (messages Messages) {
+				messages = Messages{}
+				messages = append(messages, Message{Value1: fmt.Sprintf("%s %s", strings.TrimSpace(info.Desc), info.Value.Type)})
+				return messages
+			}, nil, nil, v)
+		}
+	}
+	if usePlugin {
+		return PostActionCall("Describe", v)
+	}
+	return true
+}
+
 // Referrers show all refs to entity denoted by selected identifier
 func (v *View) Referrers(usePlugin bool) bool {
 	if usePlugin && !PreActionCall("Referrers", v) {
