@@ -88,6 +88,7 @@ var bindingActions = map[string]func(*View, bool) bool{
 	"HSplit":              (*View).HSplitBinding,
 	"ToggleMacro":         (*View).ToggleMacro,
 	"PlayMacro":           (*View).PlayMacro,
+	"GotoGutterMesssage":  (*View).GotoGutterMesssage,
 
 	// This was changed to InsertNewline but I don't want to break backwards compatibility
 	"InsertEnter": (*View).InsertNewline,
@@ -420,6 +421,7 @@ func DefaultBindings() map[string]string {
 		"CtrlW":          "NextSplit",
 		"CtrlU":          "ToggleMacro",
 		"CtrlJ":          "PlayMacro",
+		"F2":             "GotoGutterMesssage",
 
 		// Emacs-style keybindings
 		"Alt-f": "WordRight",
@@ -430,10 +432,9 @@ func DefaultBindings() map[string]string {
 		"Alt-n": "CursorDown",
 
 		// Integration with file managers
-		"F1":  "ToggleHelp",
-		"F2":  "Save",
-		"F4":  "Quit",
-		"F7":  "Find",
+		"F1": "ToggleHelp",
+		//"F4":  "Quit",
+		//"F7":  "Find",
 		"F10": "Quit",
 		"Esc": "Escape",
 	}

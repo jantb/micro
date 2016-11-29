@@ -1104,6 +1104,31 @@ func (v *View) OpenFile(usePlugin bool) bool {
 	return false
 }
 
+// GotoGutterMesssage goes to guttermessage
+func (v *View) GotoGutterMesssage(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("GotoGutterMesssage", v) {
+		return false
+	}
+	linenum := len(v.Buf.lines) + 1
+	for _, guttermessages := range v.messages {
+		for _, message := range guttermessages {
+			if v.Buf.Cursor.Y < message.lineNum {
+				linenum = Min(linenum, message.lineNum)
+			}
+		}
+	}
+	if linenum < len(v.Buf.lines)+1 {
+		v.Cursor.Y = linenum
+	} else {
+		v.Cursor.Y = 0
+	}
+
+	if usePlugin {
+		return PostActionCall("GotoGutterMesssage", v)
+	}
+	return true
+}
+
 // Start moves the viewport to the start of the buffer
 func (v *View) Start(usePlugin bool) bool {
 	if usePlugin && !PreActionCall("Start", v) {
