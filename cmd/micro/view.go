@@ -35,11 +35,11 @@ type View struct {
 	Type ViewType
 
 	// Actual width and height
-	width  int
-	height int
+	Width  int
+	Height int
 
-	lockWidth  bool
-	lockHeight bool
+	LockWidth  bool
+	LockHeight bool
 
 	// Where this view is located
 	x, y int
@@ -103,8 +103,8 @@ func NewViewWidthHeight(buf *Buffer, w, h int) *View {
 
 	v.x, v.y = 0, 0
 
-	v.width = w
-	v.height = h
+	v.Width = w
+	v.Height = h
 
 	v.ToggleTabbar()
 
@@ -117,7 +117,7 @@ func NewViewWidthHeight(buf *Buffer, w, h int) *View {
 	}
 
 	if v.Buf.Settings["statusline"].(bool) {
-		v.height--
+		v.Height--
 	}
 
 	for _, pl := range loadedPlugins {
@@ -134,9 +134,9 @@ func NewViewWidthHeight(buf *Buffer, w, h int) *View {
 // ToggleStatusLine creates an extra row for the statusline if necessary
 func (v *View) ToggleStatusLine() {
 	if v.Buf.Settings["statusline"].(bool) {
-		v.height--
+		v.Height--
 	} else {
-		v.height++
+		v.Height++
 	}
 }
 
@@ -145,13 +145,13 @@ func (v *View) ToggleTabbar() {
 	if len(tabs) > 1 {
 		if v.y == 0 {
 			// Include one line for the tab bar at the top
-			v.height--
+			v.Height--
 			v.y = 1
 		}
 	} else {
 		if v.y == 1 {
 			v.y = 0
-			v.height++
+			v.Height++
 		}
 	}
 }
@@ -185,9 +185,9 @@ func (v *View) ScrollUp(n int) {
 // ScrollDown scrolls the view down n lines (if possible)
 func (v *View) ScrollDown(n int) {
 	// Try to scroll by n but if it would overflow, scroll by 1
-	if v.Topline+n <= v.Buf.NumLines-v.height {
+	if v.Topline+n <= v.Buf.NumLines-v.Height {
 		v.Topline += n
-	} else if v.Topline < v.Buf.NumLines-v.height {
+	} else if v.Topline < v.Buf.NumLines-v.Height {
 		v.Topline++
 	}
 }
@@ -277,17 +277,31 @@ func (v *View) ReOpen() {
 }
 
 // HSplit opens a horizontal split with the given buffer
-func (v *View) HSplit(buf *Buffer) bool {
-	v.splitNode.HSplit(buf)
-	tabs[v.TabNum].Resize()
-	return false
+func (v *View) HSplit(buf *Buffer) {
+	i := 0
+	if v.Buf.Settings["splitBottom"].(bool) {
+		i = 1
+	}
+	v.splitNode.HSplit(buf, v.Num+i)
 }
 
 // VSplit opens a vertical split with the given buffer
-func (v *View) VSplit(buf *Buffer) bool {
-	v.splitNode.VSplit(buf)
-	tabs[v.TabNum].Resize()
-	return false
+func (v *View) VSplit(buf *Buffer) {
+	i := 0
+	if v.Buf.Settings["splitRight"].(bool) {
+		i = 1
+	}
+	v.splitNode.VSplit(buf, v.Num+i)
+}
+
+// HSplitIndex opens a horizontal split with the given buffer at the given index
+func (v *View) HSplitIndex(buf *Buffer, splitIndex int) {
+	v.splitNode.HSplit(buf, splitIndex)
+}
+
+// VSplitIndex opens a vertical split with the given buffer at the given index
+func (v *View) VSplitIndex(buf *Buffer, splitIndex int) {
+	v.splitNode.VSplit(buf, splitIndex)
 }
 
 // GetSoftWrapLocation gets the location of a visual click on the screen and converts it to col,line
@@ -303,7 +317,7 @@ func (v *View) GetSoftWrapLocation(vx, vy int) (int, int) {
 
 		colN := 0
 		for _, ch := range line {
-			if screenX >= v.width-v.lineNumOffset {
+			if screenX >= v.Width-v.lineNumOffset {
 				screenX = 0
 				screenY++
 			}
@@ -331,17 +345,17 @@ func (v *View) GetSoftWrapLocation(vx, vy int) (int, int) {
 
 func (v *View) Bottomline() int {
 	if !v.Buf.Settings["softwrap"].(bool) {
-		return v.Topline + v.height
+		return v.Topline + v.Height
 	}
 
 	screenX, screenY := 0, 0
 	numLines := 0
-	for lineN := v.Topline; lineN < v.Topline+v.height; lineN++ {
+	for lineN := v.Topline; lineN < v.Topline+v.Height; lineN++ {
 		line := v.Buf.Line(lineN)
 
 		colN := 0
 		for _, ch := range line {
-			if screenX >= v.width-v.lineNumOffset {
+			if screenX >= v.Width-v.lineNumOffset {
 				screenX = 0
 				screenY++
 			}
@@ -357,7 +371,7 @@ func (v *View) Bottomline() int {
 		screenY++
 		numLines++
 
-		if screenY >= v.height {
+		if screenY >= v.Height {
 			break
 		}
 	}
@@ -392,8 +406,8 @@ func (v *View) Relocate() bool {
 			v.leftCol = cx
 			ret = true
 		}
-		if cx+v.lineNumOffset+1 > v.leftCol+v.width {
-			v.leftCol = cx - v.width + v.lineNumOffset + 1
+		if cx+v.lineNumOffset+1 > v.leftCol+v.Width {
+			v.leftCol = cx - v.Width + v.lineNumOffset + 1
 			ret = true
 		}
 	}
@@ -403,9 +417,9 @@ func (v *View) Relocate() bool {
 // MoveToMouseClick moves the cursor to location x, y assuming x, y were given
 // by a mouse click
 func (v *View) MoveToMouseClick(x, y int) {
-	if y-v.Topline > v.height-1 {
+	if y-v.Topline > v.Height-1 {
 		v.ScrollDown(1)
-		y = v.height + v.Topline - 1
+		y = v.Height + v.Topline - 1
 	}
 	if y >= v.Buf.NumLines {
 		y = v.Buf.NumLines - 1
@@ -644,7 +658,7 @@ func (v *View) openHelp(helpPage string) {
 }
 
 func (v *View) drawCell(x, y int, ch rune, combc []rune, style tcell.Style) {
-	if x >= v.x && x < v.x+v.width && y >= v.y && y < v.y+v.height {
+	if x >= v.x && x < v.x+v.Width && y >= v.y && y < v.y+v.Height {
 		screen.SetContent(x, y, ch, combc, style)
 	}
 }
@@ -698,14 +712,14 @@ func (v *View) DisplayView() {
 	curLineN := 0
 
 	// ViewLine is the current line from the top of the viewport
-	for viewLine := 0; viewLine < v.height; viewLine++ {
+	for viewLine := 0; viewLine < v.Height; viewLine++ {
 		screenY++
 		screenX = v.x
 
 		// This is the current line number of the buffer that we are drawing
 		curLineN = viewLine + v.Topline
 
-		if screenY-v.y >= v.height {
+		if screenY-v.y >= v.Height {
 			break
 		}
 
@@ -717,7 +731,7 @@ func (v *View) DisplayView() {
 
 		// If the buffer is smaller than the view height we have to clear all this space
 		if curLineN >= v.Buf.NumLines {
-			for i := screenX; i < v.x+v.width; i++ {
+			for i := screenX; i < v.x+v.Width; i++ {
 				v.drawCell(i, screenY, ' ', nil, defStyle)
 			}
 
@@ -779,7 +793,7 @@ func (v *View) DisplayView() {
 				lineNumStyle = style
 			}
 			if style, ok := colorscheme["current-line-number"]; ok {
-				if curLineN == v.Cursor.Y && tabs[curTab].curView == v.Num && !v.Cursor.HasSelection() {
+				if curLineN == v.Cursor.Y && tabs[curTab].CurView == v.Num && !v.Cursor.HasSelection() {
 					lineNumStyle = style
 				}
 			}
@@ -808,7 +822,7 @@ func (v *View) DisplayView() {
 		tabSize := int(v.Buf.Settings["tabsize"].(float64))
 		for _, ch := range line {
 			if v.Buf.Settings["softwrap"].(bool) {
-				if screenX-v.x >= v.width {
+				if screenX-v.x >= v.Width {
 					screenY++
 					for i := 0; i < v.lineNumOffset; i++ {
 						screen.SetContent(v.x+i, screenY, ' ', nil, lineNumStyle)
@@ -817,7 +831,7 @@ func (v *View) DisplayView() {
 				}
 			}
 
-			if tabs[curTab].curView == v.Num && !v.Cursor.HasSelection() && v.Cursor.Y == curLineN && colN == v.Cursor.X {
+			if tabs[curTab].CurView == v.Num && !v.Cursor.HasSelection() && v.Cursor.Y == curLineN && colN == v.Cursor.X {
 				v.DisplayCursor(screenX-v.leftCol, screenY)
 			}
 
@@ -843,7 +857,7 @@ func (v *View) DisplayView() {
 
 			// We need to display the background of the linestyle with the correct color if cursorline is enabled
 			// and this is the current view and there is no selection on this line and the cursor is on this line
-			if v.Buf.Settings["cursorline"].(bool) && tabs[curTab].curView == v.Num && !v.Cursor.HasSelection() && v.Cursor.Y == curLineN {
+			if v.Buf.Settings["cursorline"].(bool) && tabs[curTab].CurView == v.Num && !v.Cursor.HasSelection() && v.Cursor.Y == curLineN {
 				if style, ok := colorscheme["cursor-line"]; ok {
 					fg, _, _ := style.Decompose()
 					lineStyle = lineStyle.Background(fg)
@@ -869,7 +883,7 @@ func (v *View) DisplayView() {
 						lineIndentStyle = style
 					}
 				}
-				if v.Buf.Settings["cursorline"].(bool) && tabs[curTab].curView == v.Num && !v.Cursor.HasSelection() && v.Cursor.Y == curLineN {
+				if v.Buf.Settings["cursorline"].(bool) && tabs[curTab].CurView == v.Num && !v.Cursor.HasSelection() && v.Cursor.Y == curLineN {
 					if style, ok := colorscheme["cursor-line"]; ok {
 						fg, _, _ := style.Decompose()
 						lineIndentStyle = lineIndentStyle.Background(fg)
@@ -911,7 +925,7 @@ func (v *View) DisplayView() {
 		}
 		// Here we are at a newline
 
-		if tabs[curTab].curView == v.Num && !v.Cursor.HasSelection() && v.Cursor.Y == curLineN && colN == v.Cursor.X {
+		if tabs[curTab].CurView == v.Num && !v.Cursor.HasSelection() && v.Cursor.Y == curLineN && colN == v.Cursor.X {
 			v.DisplayCursor(screenX-v.leftCol, screenY)
 		}
 
@@ -932,9 +946,9 @@ func (v *View) DisplayView() {
 
 		charNum = charNum.Move(1, v.Buf)
 
-		for i := 0; i < v.width; i++ {
+		for i := 0; i < v.Width; i++ {
 			lineStyle := defStyle
-			if v.Buf.Settings["cursorline"].(bool) && tabs[curTab].curView == v.Num && !v.Cursor.HasSelection() && v.Cursor.Y == curLineN {
+			if v.Buf.Settings["cursorline"].(bool) && tabs[curTab].CurView == v.Num && !v.Cursor.HasSelection() && v.Cursor.Y == curLineN {
 				if style, ok := colorscheme["cursor-line"]; ok {
 					fg, _, _ := style.Decompose()
 					lineStyle = lineStyle.Background(fg)
@@ -969,15 +983,15 @@ func (v *View) DisplayCursor(x, y int) {
 func (v *View) Display() {
 	v.DisplayView()
 	// Don't draw the cursor if it is out of the viewport or if it has a selection
-	if (v.Cursor.Y-v.Topline < 0 || v.Cursor.Y-v.Topline > v.height-1) || v.Cursor.HasSelection() {
+	if (v.Cursor.Y-v.Topline < 0 || v.Cursor.Y-v.Topline > v.Height-1) || v.Cursor.HasSelection() {
 		screen.HideCursor()
 	}
 	_, screenH := screen.Size()
 	if v.Buf.Settings["statusline"].(bool) {
 		v.sline.Display()
-	} else if (v.y + v.height) != screenH-1 {
-		for x := 0; x < v.width; x++ {
-			screen.SetContent(v.x+x, v.y+v.height, '-', nil, defStyle.Reverse(true))
+	} else if (v.y + v.Height) != screenH-1 {
+		for x := 0; x < v.Width; x++ {
+			screen.SetContent(v.x+x, v.y+v.Height, '-', nil, defStyle.Reverse(true))
 		}
 	}
 }

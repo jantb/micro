@@ -106,8 +106,7 @@ func LoadInput() []*Buffer {
 				input, err = ioutil.ReadFile(filename)
 				if err != nil {
 					TermMessage(err)
-					input = []byte{}
-					filename = ""
+					continue
 				}
 			}
 			// If the file didn't exist, input will be empty, and we'll open an empty buffer
@@ -306,6 +305,10 @@ func main() {
 
 	// Now we load the input
 	buffers := LoadInput()
+	if len(buffers) == 0 {
+		screen.Fini()
+		os.Exit(1)
+	}
 	for _, buf := range buffers {
 		// For each buffer we create a new tab and place the view in that tab
 		tab := NewTabFromView(NewView(buf))
@@ -448,8 +451,8 @@ func main() {
 						// We loop through each view in the current tab and make sure the current view
 						// is the one being clicked in
 						for _, v := range tabs[curTab].views {
-							if x >= v.x && x < v.x+v.width && y >= v.y && y < v.y+v.height {
-								tabs[curTab].curView = v.Num
+							if x >= v.x && x < v.x+v.Width && y >= v.y && y < v.y+v.Height {
+								tabs[curTab].CurView = v.Num
 							}
 						}
 					}
