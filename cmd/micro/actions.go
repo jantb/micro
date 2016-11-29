@@ -1175,6 +1175,7 @@ func (v *View) GotoFile(usePlugin bool) bool {
 	}, func(message Message) {
 		var f File
 		json.Unmarshal(message.Value2, &f)
+		v.Buf.Save()
 		v.Open(f.Path)
 	}, nil, v)
 
