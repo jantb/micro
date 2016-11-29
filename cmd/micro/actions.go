@@ -1026,8 +1026,8 @@ func (v *View) MoveLinesUp(usePlugin bool) bool {
 			v.Cursor.CurSelection[1].Y,
 		)
 		v.Cursor.UpN(1)
-		v.Cursor.CurSelection[0].Y --
-		v.Cursor.CurSelection[1].Y --
+		v.Cursor.CurSelection[0].Y--
+		v.Cursor.CurSelection[1].Y--
 		messenger.Message("Moved up selected line(s)")
 	} else {
 		if v.Cursor.Loc.Y == 0 {
@@ -1067,8 +1067,8 @@ func (v *View) MoveLinesDown(usePlugin bool) bool {
 			v.Cursor.CurSelection[1].Y,
 		)
 		v.Cursor.DownN(1)
-		v.Cursor.CurSelection[0].Y ++
-		v.Cursor.CurSelection[1].Y ++
+		v.Cursor.CurSelection[0].Y++
+		v.Cursor.CurSelection[1].Y++
 		messenger.Message("Moved down selected line(s)")
 	} else {
 		if v.Cursor.Loc.Y >= len(v.Buf.lines)-1 {
@@ -1283,7 +1283,7 @@ func (v *View) Autocomplete(usePlugin bool) bool {
 				if len(split) != 3 {
 					continue
 				}
-				messages = append(messages, Message{Value1: fmt.Sprintf("%s %s %s", split[0], split[1], split[2]), Value2: []byte(value)})
+				messages = append(messages, Message{Searchable: split[1], MessageToDisplay: fmt.Sprintf("%s %s %s", split[0], split[1], split[2]), Value2: []byte(value)})
 			}
 			return messages
 		}
@@ -1465,7 +1465,7 @@ func (v *View) Describe(usePlugin bool) bool {
 		} else {
 			autocomplete.OpenNoPrompt(func(v *View) (messages Messages) {
 				messages = Messages{}
-				messages = append(messages, Message{Value1: fmt.Sprintf("%s %s", strings.TrimSpace(info.Desc), info.Value.Type)})
+				messages = append(messages, Message{MessageToDisplay: fmt.Sprintf("%s %s", strings.TrimSpace(info.Desc), info.Value.Type)})
 				return messages
 			}, nil, nil, v)
 		}
@@ -1521,7 +1521,7 @@ func (v *View) Referrers(usePlugin bool) bool {
 				loc = loc[1:]
 				for _, refs := range loc {
 					for _, ref := range refs.Refs {
-						messages = append(messages, Message{Value1: fmt.Sprintf("%s (%s)", strings.TrimSpace(ref.Text), ref.Pos), Value2: []byte(ref.Pos)})
+						messages = append(messages, Message{MessageToDisplay: fmt.Sprintf("%s (%s)", strings.TrimSpace(ref.Text), ref.Pos), Value2: []byte(ref.Pos)})
 					}
 				}
 				return messages
