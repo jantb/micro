@@ -88,6 +88,7 @@ var bindingActions = map[string]func(*View, bool) bool{
 	"HSplit":              (*View).HSplitBinding,
 	"ToggleMacro":         (*View).ToggleMacro,
 	"PlayMacro":           (*View).PlayMacro,
+	"SelectWord":          (*View).SelectWord,
 
 	// This was changed to InsertNewline but I don't want to break backwards compatibility
 	"InsertEnter": (*View).InsertNewline,
@@ -417,7 +418,7 @@ func DefaultBindings() map[string]string {
 		"CtrlB":          "ShellMode",
 		"CtrlQ":          "Quit",
 		"CtrlE":          "CommandMode",
-		"CtrlW":          "NextSplit",
+		"CtrlW":          "SelectWord",
 		"CtrlU":          "ToggleMacro",
 		"CtrlJ":          "PlayMacro",
 

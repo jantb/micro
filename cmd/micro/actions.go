@@ -267,6 +267,20 @@ func (v *View) SelectWordRight(usePlugin bool) bool {
 	return true
 }
 
+// SelectWordRight selects the word under the cursor
+func (v *View) SelectWord(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("SelectWord", v) {
+		return false
+	}
+
+	v.Cursor.AddWordToSelection()
+
+	if usePlugin {
+		return PostActionCall("SelectWord", v)
+	}
+	return true
+}
+
 // SelectWordLeft selects the word to the left of the cursor
 func (v *View) SelectWordLeft(usePlugin bool) bool {
 	if usePlugin && !PreActionCall("SelectWordLeft", v) {
