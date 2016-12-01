@@ -89,8 +89,8 @@ func (a *AutocompletionBox) Open(pop PopulateFcn, acceptEnter, acceptTab AcceptF
 }
 
 //OpenNoPrompt opens a box with no prompt. Typing will cause the box to move.
-func (a *AutocompletionBox) OpenNoPrompt(pop PopulateFcn, acceptEnter, acceptTab AcceptFcn, v *View) {
-	a.Pop = pop
+func (a *AutocompletionBox) OpenNoPrompt(populate PopulateFcn, acceptEnter, acceptTab AcceptFcn, v *View) {
+	a.Pop = populate
 	a.generateAutocomplete(v)
 	a.open = true
 	a.showPrompt = false

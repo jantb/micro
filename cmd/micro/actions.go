@@ -1466,52 +1466,20 @@ func (v *View) What(usePlugin bool) bool {
 	if usePlugin && !PreActionCall("What", v) {
 		return false
 	}
-	type What struct {
-		Enclosing []struct {
-			Desc  string `json:"desc"`
-			Start int    `json:"start"`
-			End   int    `json:"end"`
-		} `json:"enclosing"`
-		Modes      []string `json:"modes"`
-		Srcdir     string   `json:"srcdir"`
-		Importpath string   `json:"importpath"`
-		Object     string   `json:"object"`
-		Sameids    []string `json:"sameids"`
-	}
+
 	if v.Buf.FileType() == "go" {
-		offset := ByteOffset(v.Cursor.Loc, v.Buf)
-		_, err := exec.LookPath("guru")
-		if err != nil {
-			_, _ = exec.Command("go", "get", "-u", "golang.org/x/tools/cmd/...").CombinedOutput()
-		}
-		cmd := exec.Command("guru", "-modified", "-json", "what", fmt.Sprintf("%s:#%d", v.Buf.Path, offset))
-		in, _ := cmd.StdinPipe()
-		fmt.Fprint(in, v.Buf.GetName()+"\n")
-		fmt.Fprintf(in, "%d\n", len(v.Buf.String()))
-		fmt.Fprint(in, v.Buf.String())
-		in.Close()
-		data, err := cmd.CombinedOutput()
-		if err != nil {
-			messenger.Message(fmt.Sprintf("%s %s", data, err))
+		what := getWhat(v)
+		v.highlight = v.highlight[:0]
+		if what.Enclosing[0].Desc != "identifier" {
 			return true
 		}
-		var what = What{}
-		err = json.Unmarshal(data, &what)
-		if err != nil {
-			messenger.Message(string(data))
-		} else {
-			v.highlight = v.highlight[:0]
-			if what.Enclosing[0].Desc != "identifier" {
-				return true
-			}
-			v.highlight = append(v.highlight, []int{what.Enclosing[0].Start, what.Enclosing[0].End})
-			for _, ids := range what.Sameids {
-				split := strings.Split(ids, ":")
-				y, _ := strconv.Atoi(split[1])
-				x, _ := strconv.Atoi(split[2])
-				offset := ByteOffset(Loc{X: x - 1, Y: y - 1}, v.Buf)
-				v.highlight = append(v.highlight, []int{offset, offset + v.highlight[0][1] - v.highlight[0][0]})
-			}
+		v.highlight = append(v.highlight, []int{what.Enclosing[0].Start, what.Enclosing[0].End})
+		for _, ids := range what.Sameids {
+			split := strings.Split(ids, ":")
+			y, _ := strconv.Atoi(split[1])
+			x, _ := strconv.Atoi(split[2])
+			offset := ByteOffset(Loc{X: x - 1, Y: y - 1}, v.Buf)
+			v.highlight = append(v.highlight, []int{offset, offset + v.highlight[0][1] - v.highlight[0][0]})
 		}
 	}
 	if usePlugin {
