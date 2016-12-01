@@ -101,16 +101,22 @@ func LoadInput() []*Buffer {
 			filename = flag.Args()[i]
 
 			// Check that the file exists
+			var input *os.File
 			if _, e := os.Stat(filename); e == nil {
 				// If it exists we load it into a buffer
-				input, err = ioutil.ReadFile(filename)
+				input, err = os.Open(filename)
+				defer input.Close()
 				if err != nil {
 					TermMessage(err)
 					continue
 				}
 			}
 			// If the file didn't exist, input will be empty, and we'll open an empty buffer
-			buffers = append(buffers, NewBuffer(input, filename))
+			if input != nil {
+				buffers = append(buffers, NewBuffer(input, filename))
+			} else {
+				buffers = append(buffers, NewBuffer(strings.NewReader(""), filename))
+			}
 		}
 	} else if !isatty.IsTerminal(os.Stdin.Fd()) {
 		// Option 2
@@ -121,10 +127,10 @@ func LoadInput() []*Buffer {
 			TermMessage("Error reading from stdin: ", err)
 			input = []byte{}
 		}
-		buffers = append(buffers, NewBuffer(input, filename))
+		buffers = append(buffers, NewBuffer(strings.NewReader(string(input)), filename))
 	} else {
 		// Option 3, just open an empty buffer
-		buffers = append(buffers, NewBuffer(input, filename))
+		buffers = append(buffers, NewBuffer(strings.NewReader(string(input)), filename))
 	}
 
 	return buffers
@@ -347,7 +353,7 @@ func main() {
 	L.SetGlobal("HandleShellCommand", luar.New(L, HandleShellCommand))
 	L.SetGlobal("GetLeadingWhitespace", luar.New(L, GetLeadingWhitespace))
 	L.SetGlobal("MakeCompletion", luar.New(L, MakeCompletion))
-	L.SetGlobal("NewBuffer", luar.New(L, NewBuffer))
+	L.SetGlobal("NewBuffer", luar.New(L, NewBufferFromString))
 	L.SetGlobal("RuneStr", luar.New(L, func(r rune) string {
 		return string(r)
 	}))
@@ -363,6 +369,7 @@ func main() {
 
 	// Used for asynchronous jobs
 	L.SetGlobal("JobStart", luar.New(L, JobStart))
+	L.SetGlobal("JobSpawn", luar.New(L, JobSpawn))
 	L.SetGlobal("JobSend", luar.New(L, JobSend))
 	L.SetGlobal("JobStop", luar.New(L, JobStop))
 
