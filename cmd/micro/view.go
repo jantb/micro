@@ -88,6 +88,8 @@ type View struct {
 	matches SyntaxMatches
 
 	splitNode *LeafNode
+
+	highlight [][]int
 }
 
 // NewView returns a new fullscreen view
@@ -439,6 +441,8 @@ func (v *View) MoveToMouseClick(x, y int) {
 	v.Cursor.X = x
 	v.Cursor.Y = y
 	v.Cursor.LastVisualX = v.Cursor.GetVisualX()
+	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+	v.What(false)
 }
 
 // HandleEvent handles an event passed by the main loop
@@ -853,6 +857,16 @@ func (v *View) DisplayView() {
 				}
 			} else {
 				lineStyle = highlightStyle
+			}
+
+			for _, value := range v.highlight {
+				offset := ByteOffset(charNum, v.Buf)
+				if offset >= value[0] && offset < value[1] {
+					if style, ok := colorscheme["underlined"]; ok {
+						lineStyle = style
+					}
+					break
+				}
 			}
 
 			// We need to display the background of the linestyle with the correct color if cursorline is enabled
