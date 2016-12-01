@@ -863,7 +863,7 @@ func (v *View) DisplayView() {
 			for _, value := range v.highlight {
 				offset := ByteOffset(charNum, v.Buf)
 				if offset >= value[0] && offset < value[1] {
-					if style, ok := colorscheme["underlined"]; ok {
+					if style, ok := colorscheme["highlight"]; ok {
 						lineStyle = style
 					}
 					break
