@@ -241,9 +241,10 @@ func (a *AutocompletionBox) HandleEvent(event tcell.Event, v *View) (swallow boo
 				if len(a.messagesToshow) > a.selected && len(a.messagesToshow) > 0 {
 					message := a.messagesToshow[a.selected]
 					message.Extra = a.Extra
-					a.AcceptEnter(message)
+					f := a.AcceptEnter
+					a.Reset()
+					f(message)
 				}
-				a.Reset()
 			}
 			return true
 		case tcell.KeyTAB:
@@ -251,9 +252,10 @@ func (a *AutocompletionBox) HandleEvent(event tcell.Event, v *View) (swallow boo
 				if len(a.messagesToshow) > a.selected {
 					message := a.messagesToshow[a.selected]
 					message.Extra = a.Extra
-					a.AcceptEnter(message)
+					f := a.AcceptTab
+					a.Reset()
+					f(message)
 				}
-				a.Reset()
 			}
 			return true
 		case tcell.KeyESC:

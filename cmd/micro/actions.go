@@ -1461,6 +1461,45 @@ func (v *View) Rename(usePlugin bool) bool {
 	return true
 }
 
+// Suggest show suggestion box
+func (v *View) Suggest(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("Suggest", v) {
+		return false
+	}
+
+	if v.Buf.FileType() == "go" {
+		what := getWhat(v)
+		autocomplete.OpenNoPrompt(func(v *View) (messages Messages) {
+			messages = Messages{}
+			for _, mode := range what.Modes {
+				messages = append(messages, Message{MessageToDisplay: strings.Title(mode), Value2: []byte(mode)})
+			}
+			return messages
+		}, func(message Message) {
+			switch string(message.Value2) {
+			case "definition":
+				v.Definition(false)
+			case "describe":
+				v.Describe(false)
+			case "implements":
+
+			case "pointsto":
+
+			case "referrers":
+				v.Referrers(false)
+			case "callers":
+
+			case "callstack":
+
+			}
+		}, nil, v)
+	}
+	if usePlugin {
+		return PostActionCall("Suggest", v)
+	}
+	return true
+}
+
 // What highlight under cursor
 func (v *View) What(usePlugin bool) bool {
 	if usePlugin && !PreActionCall("What", v) {
@@ -1640,6 +1679,7 @@ func (v *View) Referrers(usePlugin bool) bool {
 				v.Buf.Cursor.X = x - 1
 				v.Buf.Cursor.Y = y - 1
 				cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+				v.Relocate()
 				v.What(usePlugin)
 			}, nil, v)
 		}
