@@ -858,15 +858,14 @@ func (v *View) DisplayView() {
 				}
 			} else {
 				lineStyle = highlightStyle
-			}
-
-			for _, value := range v.highlight {
-				offset := ByteOffset(charNum, v.Buf)
-				if offset >= value[0] && offset < value[1] {
-					if style, ok := colorscheme["highlight"]; ok {
-						lineStyle = style
+				for _, value := range v.highlight {
+					offset := ByteOffset(charNum, v.Buf)
+					if offset >= value[0] && offset < value[1] {
+						if style, ok := colorscheme["highlight"]; ok {
+							lineStyle = style
+						}
+						break
 					}
-					break
 				}
 			}
 

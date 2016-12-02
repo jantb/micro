@@ -1,7 +1,5 @@
 package main
 
-import "fmt"
-
 // FromCharPos converts from a character position to an x, y position
 func FromCharPos(loc int, buf *Buffer) Loc {
 	charNum := 0
@@ -12,6 +10,22 @@ func FromCharPos(loc int, buf *Buffer) Loc {
 		charNum += lineLen
 		y++
 		lineLen = Count(buf.Line(y)) + 1
+	}
+	x = loc - charNum
+
+	return Loc{x, y}
+}
+
+// FromCharPos converts from a character position to an x, y position
+func FromByteOffset(loc int, buf *Buffer) Loc {
+	charNum := 0
+	x, y := 0, 0
+
+	lineLen := len(buf.Line(y)) + 1
+	for charNum+lineLen <= loc {
+		charNum += lineLen
+		y++
+		lineLen = len(buf.Line(y)) + 1
 	}
 	x = loc - charNum
 
@@ -46,9 +60,6 @@ func ByteOffset(pos Loc, buf *Buffer) int {
 	for i := 0; i < y; i++ {
 		// + 1 for the newline
 		loc += len(buf.Line(i)) + 1
-	}
-	if len(buf.Line(y)) < x {
-		TermMessage(fmt.Sprintf("%s %d %d - %d %d - %d %d", buf.Line(y), len(buf.Line(y)), x, len(buf.Line(y-1)), x, len(buf.Line(y+1)), x))
 	}
 
 	loc += len(buf.Line(y)[:x])
