@@ -6,6 +6,7 @@ import (
 	"os/exec"
 )
 
+// What defines the what command from guru
 type What struct {
 	Enclosing []struct {
 		Desc  string `json:"desc"`
