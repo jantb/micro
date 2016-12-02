@@ -1534,6 +1534,9 @@ func (v *View) What(usePlugin bool) bool {
 	if v.Buf.FileType() == "go" {
 		what := getWhat(v)
 		v.highlight = v.highlight[:0]
+		if len(what.Enclosing) == 0 {
+			return true
+		}
 		if what.Enclosing[0].Desc != "identifier" {
 			return true
 		}
