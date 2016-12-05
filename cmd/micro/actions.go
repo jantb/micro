@@ -12,9 +12,11 @@ import (
 	"fmt"
 	"github.com/yuin/gopher-lua"
 	"github.com/zyedidia/clipboard"
+	"golang.org/x/tools/go/gcimporter15/testdata"
 	"io"
 	"io/ioutil"
 	"os/exec"
+	"sort"
 )
 
 // PreActionCall executes the lua pre callback if possible
@@ -1241,6 +1243,8 @@ func (v *View) GotoFile(usePlugin bool) bool {
 			message := Message{Searchable: file.Name, MessageToDisplay: fmt.Sprintf("%s (%s)", file.Name, file.Path), Value2: b}
 			messages = append(messages, message)
 		}
+
+		sort.Sort(messages)
 		return messages
 	}, func(message Message) {
 		var f File

@@ -2,7 +2,6 @@ package main
 
 import (
 	"index/suffixarray"
-	"sort"
 	"strings"
 
 	"strconv"
@@ -107,7 +106,6 @@ func (a *AutocompletionBox) generateAutocomplete(v *View) {
 		}
 		a.width = Max(a.width, Count(message.MessageToDisplay))
 	}
-	sort.Sort(a.messages)
 	a.filterAutocomplete()
 }
 
