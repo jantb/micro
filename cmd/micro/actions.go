@@ -1452,12 +1452,14 @@ func (v *View) Autocomplete(usePlugin bool) bool {
 			if IsWordChar(string(v.Cursor.RuneUnder(v.Cursor.X))) {
 				v.Cursor.SelectWord()
 				v.Cursor.DeleteSelection()
+			} else {
+				v.Cursor.Right()
 			}
-			v.Cursor.Right()
 
 			v.Buf.Insert(v.Cursor.Loc, val)
-			v.Cursor.WordRight()
-			v.Cursor.Right()
+			for range val {
+				v.Cursor.Right()
+			}
 			v.Vet()
 			v.Lint()
 		}
