@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"github.com/yuin/gopher-lua"
 	"github.com/zyedidia/clipboard"
-	"golang.org/x/tools/go/gcimporter15/testdata"
 	"io"
 	"io/ioutil"
 	"os/exec"
@@ -1429,32 +1428,36 @@ func (v *View) Autocomplete(usePlugin bool) bool {
 		}
 		acceptTab := func(message Message) {
 			split := strings.Split(string(message.Value2), ",,")
-			if split[0] == "func" {
-				c := v.Buf.Cursor
-				c.Left()
-				if IsWordChar(string(c.RuneUnder(c.X))) {
-					c.SelectWord()
-					c.DeleteSelection()
+			t := split[0]
+			val := split[1]
+			def := split[2]
+			if t == "func" {
+				v.Cursor.Left()
+				if IsWordChar(string(v.Cursor.RuneUnder(v.Cursor.X))) {
+					v.Cursor.SelectWord()
+					v.Cursor.DeleteSelection()
 				} else {
-					c.Right()
+					v.Cursor.Right()
 				}
 
-				v.Buf.Insert(c.Loc, split[1]+"()")
-				c.WordRight()
-				c.Right()
+				v.Buf.Insert(v.Cursor.Loc, val+def[4:])
+				for range val + def[4:] {
+					v.Cursor.Right()
+				}
+				v.Vet()
+				v.Lint()
 				return
 			}
-			c := v.Buf.Cursor
-			c.Left()
-			if IsWordChar(string(c.RuneUnder(c.X))) {
-				c.SelectWord()
-				c.DeleteSelection()
+			v.Cursor.Left()
+			if IsWordChar(string(v.Cursor.RuneUnder(v.Cursor.X))) {
+				v.Cursor.SelectWord()
+				v.Cursor.DeleteSelection()
 			}
-			c.Right()
+			v.Cursor.Right()
 
-			v.Buf.Insert(c.Loc, split[1])
-			c.WordRight()
-			c.Right()
+			v.Buf.Insert(v.Cursor.Loc, val)
+			v.Cursor.WordRight()
+			v.Cursor.Right()
 			v.Vet()
 			v.Lint()
 		}
