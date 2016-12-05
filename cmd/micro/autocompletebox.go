@@ -5,9 +5,10 @@ import (
 	"sort"
 	"strings"
 
+	"strconv"
+
 	"github.com/zyedidia/clipboard"
 	"github.com/zyedidia/tcell"
-	"strconv"
 )
 
 // AutocompletionBox Display autocompletions in a box above or below the cursor
@@ -249,7 +250,7 @@ func (a *AutocompletionBox) HandleEvent(event tcell.Event, v *View) (swallow boo
 			return true
 		case tcell.KeyTAB:
 			if a.AcceptTab != nil {
-				if len(a.messagesToshow) > a.selected {
+				if len(a.messagesToshow) > a.selected && a.selected > -1 {
 					message := a.messagesToshow[a.selected]
 					message.Extra = a.Extra
 					f := a.AcceptTab
