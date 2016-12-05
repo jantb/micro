@@ -1516,7 +1516,7 @@ func (v *View) Suggest(usePlugin bool) bool {
 			case "describe":
 				v.Describe(false)
 			case "implements":
-
+				v.Implements(false)
 			case "pointsto":
 
 			case "referrers":
@@ -1530,6 +1530,36 @@ func (v *View) Suggest(usePlugin bool) bool {
 	}
 	if usePlugin {
 		return PostActionCall("Suggest", v)
+	}
+	return true
+}
+
+// Implements gives list of interfaces
+func (v *View) Implements(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("Implements", v) {
+		return false
+	}
+
+	if v.Buf.FileType() == "go" {
+		implements := getImplements(v)
+		autocomplete.OpenNoPrompt(func(v *View) (messages Messages) {
+			messages = Messages{}
+			for _, from := range implements.From {
+				messages = append(messages, Message{MessageToDisplay: fmt.Sprintf("%s %s", from.Name, from.Kind), Value2: []byte(from.Pos)})
+			}
+			return messages
+		}, func(message Message) {
+			v.Open(strings.Split(string(message.Value2), ":")[0])
+			x, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[2])
+			y, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[1])
+			v.Buf.Cursor.X = x - 1
+			v.Buf.Cursor.Y = y - 1
+			v.Relocate()
+			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+		}, nil, v)
+	}
+	if usePlugin {
+		return PostActionCall("Implements", v)
 	}
 	return true
 }
@@ -1600,6 +1630,8 @@ func (v *View) Definition(usePlugin bool) bool {
 			y, _ := strconv.Atoi(strings.Split(loc.Objpos, ":")[1])
 			v.Buf.Cursor.X = x - 1
 			v.Buf.Cursor.Y = y - 1
+			v.Relocate()
+			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
 
 			v.What(usePlugin)
 		}
