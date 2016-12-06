@@ -146,11 +146,11 @@ func (a *AutocompletionBox) Display(v *View) {
 		}
 		for x := 0; x < a.width; x++ {
 			if i == a.selected-skipped {
-				if style, ok := colorscheme["cursor-line"]; ok {
-					_, bg, _ := style.Decompose()
-					a.style = a.style.Background(bg)
-				}
 				a.style = defStyle
+				if style, ok := colorscheme["bg"]; ok {
+					fg, _, _ := style.Decompose()
+					a.style = a.style.Background(fg)
+				}
 			} else {
 				a.style = defStyle.Reverse(true)
 			}
