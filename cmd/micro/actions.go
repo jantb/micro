@@ -302,27 +302,28 @@ func (v *View) SelectWord(usePlugin bool) bool {
 	if usePlugin && !PreActionCall("SelectWord", v) {
 		return false
 	}
+	if v.Buf.FileType() == "go" {
+		what := getWhat(v)
+		selection := v.Cursor.CurSelection
 
-	what := getWhat(v)
-	selection := v.Cursor.CurSelection
-
-	expandToNext := false
-	for _, enclosing := range what.Enclosing {
-		locStart := FromByteOffset(enclosing.Start, v.Buf)
-		locEnd := FromByteOffset(enclosing.End, v.Buf)
-		if !v.Cursor.HasSelection() {
-			//TermMessage(fmt.Sprintf("%s %s %s", locStart, locEnd, v.Cursor.Loc))
-			v.Cursor.SetSelectionStart(locStart)
-			v.Cursor.SetSelectionEnd(locEnd)
-			continue
-		}
-		if expandToNext {
-			v.Cursor.SetSelectionStart(locStart)
-			v.Cursor.SetSelectionEnd(locEnd)
-			break
-		}
-		if selection[0] == locStart && selection[1] == locEnd {
-			expandToNext = true
+		expandToNext := false
+		for _, enclosing := range what.Enclosing {
+			locStart := FromByteOffset(enclosing.Start, v.Buf)
+			locEnd := FromByteOffset(enclosing.End, v.Buf)
+			if !v.Cursor.HasSelection() {
+				//TermMessage(fmt.Sprintf("%s %s %s", locStart, locEnd, v.Cursor.Loc))
+				v.Cursor.SetSelectionStart(locStart)
+				v.Cursor.SetSelectionEnd(locEnd)
+				continue
+			}
+			if expandToNext {
+				v.Cursor.SetSelectionStart(locStart)
+				v.Cursor.SetSelectionEnd(locEnd)
+				break
+			}
+			if selection[0] == locStart && selection[1] == locEnd {
+				expandToNext = true
+			}
 		}
 	}
 
