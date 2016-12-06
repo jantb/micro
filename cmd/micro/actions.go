@@ -1522,7 +1522,7 @@ func (v *View) Suggest(usePlugin bool) bool {
 			case "referrers":
 				v.Referrers(false)
 			case "callers":
-
+				v.Callers(false)
 			case "callstack":
 
 			}
@@ -1530,6 +1530,37 @@ func (v *View) Suggest(usePlugin bool) bool {
 	}
 	if usePlugin {
 		return PostActionCall("Suggest", v)
+	}
+	return true
+}
+
+// Callers show possible targets of selected function call
+func (v *View) Callers(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("Callers", v) {
+		return false
+	}
+
+	if v.Buf.FileType() == "go" {
+		callers := getCallers(v)
+		autocomplete.OpenNoPrompt(func(v *View) (messages Messages) {
+			messages = Messages{}
+			for _, p := range callers {
+				messages = append(messages, Message{MessageToDisplay: fmt.Sprintf("%s %s (%s)", p.Caller, p.Desc, p.Pos), Value2: []byte(p.Pos)})
+			}
+			return messages
+		}, func(message Message) {
+			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+			v.Open(strings.Split(string(message.Value2), ":")[0])
+			x, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[2])
+			y, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[1])
+			v.Buf.Cursor.X = x - 1
+			v.Buf.Cursor.Y = y - 1
+			v.Relocate()
+			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+		}, nil, v)
+	}
+	if usePlugin {
+		return PostActionCall("Callers", v)
 	}
 	return true
 }
