@@ -1518,7 +1518,7 @@ func (v *View) Suggest(usePlugin bool) bool {
 			case "implements":
 				v.Implements(false)
 			case "pointsto":
-
+				v.PointsTo(false)
 			case "referrers":
 				v.Referrers(false)
 			case "callers":
@@ -1530,6 +1530,39 @@ func (v *View) Suggest(usePlugin bool) bool {
 	}
 	if usePlugin {
 		return PostActionCall("Suggest", v)
+	}
+	return true
+}
+
+// PointsTo show variables the selected pointer may point to
+func (v *View) PointsTo(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("Implements", v) {
+		return false
+	}
+
+	if v.Buf.FileType() == "go" {
+		pointsto := getPointsto(v)
+		autocomplete.OpenNoPrompt(func(v *View) (messages Messages) {
+			messages = Messages{}
+			for _, p := range pointsto {
+				for _, l := range p.Labels {
+					messages = append(messages, Message{MessageToDisplay: fmt.Sprintf("%s %s", p.Type, l.Desc), Value2: []byte(l.Pos)})
+				}
+			}
+			return messages
+		}, func(message Message) {
+			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+			v.Open(strings.Split(string(message.Value2), ":")[0])
+			x, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[2])
+			y, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[1])
+			v.Buf.Cursor.X = x - 1
+			v.Buf.Cursor.Y = y - 1
+			v.Relocate()
+			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+		}, nil, v)
+	}
+	if usePlugin {
+		return PostActionCall("Implements", v)
 	}
 	return true
 }
@@ -1598,10 +1631,6 @@ func (v *View) What(usePlugin bool) bool {
 func (v *View) Definition(usePlugin bool) bool {
 	if usePlugin && !PreActionCall("Definition", v) {
 		return false
-	}
-	type Loc struct {
-		Objpos string `json:"objpos"`
-		Desc   string `json:"desc"`
 	}
 	if v.Buf.FileType() == "go" {
 		definition := getDefinition(v)
