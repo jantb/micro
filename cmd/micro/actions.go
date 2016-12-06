@@ -1544,7 +1544,7 @@ func (v *View) Implements(usePlugin bool) bool {
 		implements := getImplements(v)
 		autocomplete.OpenNoPrompt(func(v *View) (messages Messages) {
 			messages = Messages{}
-			for _, from := range implements.From {
+			for _, from := range implements.AssignableFrom {
 				messages = append(messages, Message{MessageToDisplay: fmt.Sprintf("%s %s", from.Name, from.Kind), Value2: []byte(from.Pos)})
 			}
 			return messages
@@ -1576,11 +1576,11 @@ func (v *View) What(usePlugin bool) bool {
 		if len(what.Enclosing) == 0 {
 			return true
 		}
-		if what.Enclosing[0].Desc != "identifier" {
+		if what.Enclosing[0].Description != "identifier" {
 			return true
 		}
 		v.highlight = append(v.highlight, []int{what.Enclosing[0].Start, what.Enclosing[0].End})
-		for _, ids := range what.Sameids {
+		for _, ids := range what.SameIDs {
 			split := strings.Split(ids, ":")
 			y, _ := strconv.Atoi(split[1])
 			x, _ := strconv.Atoi(split[2])
@@ -1604,37 +1604,16 @@ func (v *View) Definition(usePlugin bool) bool {
 		Desc   string `json:"desc"`
 	}
 	if v.Buf.FileType() == "go" {
-		offset := ByteOffset(v.Cursor.Loc, v.Buf)
-		_, err := exec.LookPath("guru")
-		if err != nil {
-			_, _ = exec.Command("go", "get", "-u", "golang.org/x/tools/cmd/...").CombinedOutput()
-		}
-		cmd := exec.Command("guru", "-modified", "-json", "definition", fmt.Sprintf("%s:#%d", v.Buf.Path, offset))
-		in, _ := cmd.StdinPipe()
-		fmt.Fprint(in, v.Buf.GetName()+"\n")
-		fmt.Fprintf(in, "%d\n", len(v.Buf.String()))
-		fmt.Fprint(in, v.Buf.String())
-		in.Close()
-		data, err := cmd.CombinedOutput()
-		if err != nil {
-			messenger.Message(fmt.Sprintf("%s %s", data, err))
-			return true
-		}
-		var loc = Loc{}
-		err = json.Unmarshal(data, &loc)
-		if err != nil {
-			messenger.Message(string(data))
-		} else {
-			v.Open(strings.Split(loc.Objpos, ":")[0])
-			x, _ := strconv.Atoi(strings.Split(loc.Objpos, ":")[2])
-			y, _ := strconv.Atoi(strings.Split(loc.Objpos, ":")[1])
-			v.Buf.Cursor.X = x - 1
-			v.Buf.Cursor.Y = y - 1
-			v.Relocate()
-			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+		definition := getDefinition(v)
+		v.Open(strings.Split(definition.ObjPos, ":")[0])
+		x, _ := strconv.Atoi(strings.Split(definition.ObjPos, ":")[2])
+		y, _ := strconv.Atoi(strings.Split(definition.ObjPos, ":")[1])
+		v.Buf.Cursor.X = x - 1
+		v.Buf.Cursor.Y = y - 1
+		v.Relocate()
+		cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
 
-			v.What(usePlugin)
-		}
+		v.What(usePlugin)
 	}
 	if usePlugin {
 		return PostActionCall("Definition", v)

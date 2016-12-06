@@ -3,37 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"golang.org/x/tools/cmd/guru/serial"
 	"os/exec"
 )
 
-// What defines the what command from guru
-type What struct {
-	Enclosing []struct {
-		Desc  string `json:"desc"`
-		Start int    `json:"start"`
-		End   int    `json:"end"`
-	} `json:"enclosing"`
-	Modes      []string `json:"modes"`
-	Srcdir     string   `json:"srcdir"`
-	Importpath string   `json:"importpath"`
-	Object     string   `json:"object"`
-	Sameids    []string `json:"sameids"`
-}
-
-type Implements struct {
-	From []struct {
-		Kind string `json:"kind"`
-		Name string `json:"name"`
-		Pos  string `json:"pos"`
-	} `json:"from"`
-	Type struct {
-		Kind string `json:"kind"`
-		Name string `json:"name"`
-		Pos  string `json:"pos"`
-	} `json:"type"`
-}
-
-func getWhat(v *View) What {
+func getWhat(v *View) serial.What {
 	offset := ByteOffset(v.Cursor.Loc, v.Buf)
 	_, err := exec.LookPath("guru")
 	if err != nil {
@@ -46,7 +20,7 @@ func getWhat(v *View) What {
 	fmt.Fprint(in, v.Buf.String())
 	in.Close()
 	data, err := cmd.CombinedOutput()
-	var what = What{}
+	var what = serial.What{}
 	if err != nil {
 		messenger.Message(fmt.Sprintf("%s %s", data, err))
 	}
@@ -58,7 +32,7 @@ func getWhat(v *View) What {
 
 }
 
-func getImplements(v *View) Implements {
+func getImplements(v *View) serial.Implements {
 	offset := ByteOffset(v.Cursor.Loc, v.Buf)
 	_, err := exec.LookPath("guru")
 	if err != nil {
@@ -71,7 +45,7 @@ func getImplements(v *View) Implements {
 	fmt.Fprint(in, v.Buf.String())
 	in.Close()
 	data, err := cmd.CombinedOutput()
-	var implements = Implements{}
+	var implements = serial.Implements{}
 	if err != nil {
 		messenger.Message(fmt.Sprintf("%s %s", data, err))
 	}
@@ -80,5 +54,28 @@ func getImplements(v *View) Implements {
 		messenger.Message(string(data))
 	}
 	return implements
+}
 
+func getDefinition(v *View) serial.Definition {
+	offset := ByteOffset(v.Cursor.Loc, v.Buf)
+	_, err := exec.LookPath("guru")
+	if err != nil {
+		_, _ = exec.Command("go", "get", "-u", "golang.org/x/tools/cmd/...").CombinedOutput()
+	}
+	cmd := exec.Command("guru", "-modified", "-json", "definition", fmt.Sprintf("%s:#%d", v.Buf.Path, offset))
+	in, _ := cmd.StdinPipe()
+	fmt.Fprint(in, v.Buf.GetName()+"\n")
+	fmt.Fprintf(in, "%d\n", len(v.Buf.String()))
+	fmt.Fprint(in, v.Buf.String())
+	in.Close()
+	data, err := cmd.CombinedOutput()
+	var definition = serial.Definition{}
+	if err != nil {
+		messenger.Message(fmt.Sprintf("%s %s", data, err))
+	}
+	err = json.Unmarshal(data, &definition)
+	if err != nil {
+		messenger.Message(string(data))
+	}
+	return definition
 }
