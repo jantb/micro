@@ -1524,12 +1524,43 @@ func (v *View) Suggest(usePlugin bool) bool {
 			case "callers":
 				v.Callers(false)
 			case "callstack":
-
+				v.CallStack(false)
 			}
 		}, nil, v)
 	}
 	if usePlugin {
 		return PostActionCall("Suggest", v)
+	}
+	return true
+}
+
+// CallStack show path from callgraph root to selected function
+func (v *View) CallStack(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("Callers", v) {
+		return false
+	}
+
+	if v.Buf.FileType() == "go" {
+		callstack := getCallStack(v)
+		autocomplete.OpenNoPrompt(func(v *View) (messages Messages) {
+			messages = Messages{}
+			for _, caller := range callstack.Callers {
+				messages = append(messages, Message{MessageToDisplay: fmt.Sprintf("%s %s (%s)", caller.Desc, caller.Caller, caller.Pos), Value2: []byte(caller.Pos)})
+			}
+			return messages
+		}, func(message Message) {
+			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+			v.Open(strings.Split(string(message.Value2), ":")[0])
+			x, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[2])
+			y, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[1])
+			v.Buf.Cursor.X = x - 1
+			v.Buf.Cursor.Y = y - 1
+			v.Relocate()
+			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+		}, nil, v)
+	}
+	if usePlugin {
+		return PostActionCall("Callers", v)
 	}
 	return true
 }
