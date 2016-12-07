@@ -1,7 +1,6 @@
 package main
 
 import (
-	"index/suffixarray"
 	"strings"
 
 	"strconv"
@@ -32,7 +31,6 @@ type AutocompletionBox struct {
 
 	selected int
 
-	Index       suffixarray.Index
 	AcceptEnter AcceptFcn
 	AcceptTab   AcceptFcn
 	Pop         PopulateFcn
@@ -320,25 +318,6 @@ func (a *AutocompletionBox) HandleEvent(event tcell.Event, v *View) (swallow boo
 		case tcell.KeyRune:
 			a.response = Insert(a.response, a.cursorx, string(e.Rune()))
 			a.cursorx++
-		}
-
-	case *tcell.EventPaste:
-		clip := e.Text()
-		a.response = Insert(a.response, a.cursorx, clip)
-		a.cursorx += Count(clip)
-	case *tcell.EventMouse:
-		x, y := e.Position()
-		button := e.Buttons()
-		if y == cursorGY {
-			switch button {
-			case tcell.Button1:
-				a.cursorx = x
-				if a.cursorx < 0 {
-					a.cursorx = 0
-				} else if a.cursorx > Count(a.response) {
-					a.cursorx = Count(a.response)
-				}
-			}
 		}
 	}
 	a.filterAutocomplete()
