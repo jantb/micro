@@ -185,6 +185,7 @@ func (a *AutocompletionBox) Reset() {
 	a.AcceptTab = nil
 	a.AcceptEnter = nil
 	a.Pop = nil
+	a.width = 0
 }
 
 func (a *AutocompletionBox) filterAutocomplete() {
