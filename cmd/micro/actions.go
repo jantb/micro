@@ -1340,8 +1340,11 @@ func (v *View) Vet() {
 				if strings.TrimSpace(value) == "" {
 					continue
 				}
-				x, _ := strconv.Atoi(strings.Split(value, ":")[1])
-				v.GutterMessage("VetErrors", x, strings.Split(value, ":")[3], GutterError)
+				split := strings.Split(value, ":")
+				x, _ := strconv.Atoi(split[1])
+				if len(split) > 3 {
+					v.GutterMessage("VetErrors", x, split[3], GutterError)
+				}
 			}
 		} else {
 			v.ClearGutterMessages("VetErrors")
