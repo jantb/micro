@@ -101,6 +101,7 @@ var bindingActions = map[string]func(*View, bool) bool{
 	"SelectWord":          (*View).SelectWord,
 	"What":                (*View).What,
 	"Suggest":             (*View).Suggest,
+	"Template":            (*View).Template,
 
 	// This was changed to InsertNewline but I don't want to break backwards compatibility
 	"InsertEnter": (*View).InsertNewline,
@@ -441,6 +442,7 @@ func DefaultBindings() map[string]string {
 		"F7":        "Referrers",
 		"CtrlP":     "Describe",
 		"CtrlSpace": "Autocomplete",
+		"F8":        "Template",
 
 		// Emacs-style keybindings
 		"Alt-f": "WordRight",

@@ -36,6 +36,8 @@ var (
 
 	// Object to handle autocomplete
 	autocomplete *AutocompletionBox
+	// Object to handle templates
+	template *TemplateBox
 
 	// Object to send messages and prompts to the user
 	messenger *Messenger
@@ -306,8 +308,8 @@ func main() {
 	messenger = new(Messenger)
 	messenger.history = make(map[string][]string)
 
-	// Create a new autocompletebox
 	autocomplete = new(AutocompletionBox)
+	template = new(TemplateBox)
 
 	// Now we load the input
 	buffers := LoadInput()

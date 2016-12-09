@@ -297,6 +297,21 @@ func (v *View) SelectWordRight(usePlugin bool) bool {
 	return true
 }
 
+//Template completion
+func (v *View) Template(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("Template", v) {
+		return false
+	}
+	if v.Buf.FileType() == "go" {
+		template.Open(v)
+	}
+
+	if usePlugin {
+		return PostActionCall("Template", v)
+	}
+	return true
+}
+
 // SelectWordRight selects the word under the cursor
 func (v *View) SelectWord(usePlugin bool) bool {
 	if usePlugin && !PreActionCall("SelectWord", v) {

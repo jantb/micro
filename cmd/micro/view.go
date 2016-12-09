@@ -465,7 +465,13 @@ func (v *View) HandleEvent(event tcell.Event) {
 			if autocomplete.HandleEvent(e, v) {
 				return
 			}
-			autocomplete.generateAutocomplete(v)
+		}
+
+		// Check if we have a autocomplete prompt open, if we do grab selection
+		if template.open {
+			if template.HandleEvent(e, v) {
+				return
+			}
 		}
 
 		// Check first if input is a key binding, if it is we 'eat' the input and don't insert a rune
