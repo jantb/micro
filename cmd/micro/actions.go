@@ -1868,6 +1868,8 @@ func (v *View) Format(usePlugin bool) bool {
 			return true
 		}
 		v.Buf.ApplyDiff(string(data))
+		v.Lint()
+		v.Vet()
 	}
 	if v.Buf.FileType() == "json" {
 		var j bytes.Buffer
