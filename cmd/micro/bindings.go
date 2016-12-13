@@ -354,6 +354,7 @@ func findAction(v string) (action func(*View, bool) bool) {
 func BindKey(k, v string) {
 	key, ok := findKey(k)
 	if !ok {
+		TermMessage("Unknown keybinding: " + k)
 		return
 	}
 	if v == "ToggleHelp" {
@@ -393,7 +394,6 @@ func DefaultBindings() map[string]string {
 		"CtrlShiftUp":    "SelectToStart",
 		"CtrlShiftDown":  "SelectToEnd",
 		"Enter":          "InsertNewline",
-		"Space":          "InsertSpace",
 		"CtrlH":          "Backspace",
 		"Backspace":      "Backspace",
 		"Alt-CtrlH":      "DeleteWordLeft",
