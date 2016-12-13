@@ -303,7 +303,7 @@ func (v *View) Template(usePlugin bool) bool {
 		return false
 	}
 	if v.Buf.FileType() == "go" {
-		template.Open(v)
+		template.Open(v, "")
 	}
 
 	if usePlugin {
@@ -1459,12 +1459,16 @@ func (v *View) Autocomplete(usePlugin bool) bool {
 					v.Cursor.Right()
 				}
 
-				v.Buf.Insert(v.Cursor.Loc, val+def[4:])
-				for range val + def[4:] {
-					v.Cursor.Right()
+				def = def[5:strings.Index(def,")")]
+				d := []string{}
+				for i, value := range strings.Split(def, ", ") {
+					d = append(d, fmt.Sprintf("$%d_%s$", i, value))
 				}
-				v.Vet()
-				v.Lint()
+				text  := val+"("+strings.Join(d, ", ")+")"
+
+				TermMessage(text)
+				template.Open(v, text)
+
 				return
 			}
 			v.Cursor.Left()

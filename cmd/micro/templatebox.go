@@ -49,12 +49,9 @@ func (s selects) Less(i, j int) bool {
 }
 
 //Open opens a box with prompt
-func (a *TemplateBox) Open(v *View) {
+func (a *TemplateBox) Open(v *View, template string) {
 	a.open = true
-	a.template =
-		`for $1_key$, $2_value$ := range $0_collection$ {
-			$end$
-		}`
+	a.template = template
 	v.Buf.Insert(v.Cursor.Loc, a.template)
 
 	text := a.template
