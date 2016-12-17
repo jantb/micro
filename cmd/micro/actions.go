@@ -1459,14 +1459,13 @@ func (v *View) Autocomplete(usePlugin bool) bool {
 					v.Cursor.Right()
 				}
 
-				def = def[5:strings.Index(def,")")]
+				def = def[5:strings.Index(def, ")")]
 				d := []string{}
 				for i, value := range strings.Split(def, ", ") {
 					d = append(d, fmt.Sprintf("$%d_%s$", i, value))
 				}
-				text  := val+"("+strings.Join(d, ", ")+")"
+				text := val + "(" + strings.Join(d, ", ") + ")"
 
-				TermMessage(text)
 				template.Open(v, text)
 
 				return
