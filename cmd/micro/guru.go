@@ -8,6 +8,7 @@ import (
 )
 
 func getWhat(v *View) serial.What {
+	v.Cursor.Relocate()
 	offset := ByteOffset(v.Cursor.Loc, v.Buf)
 	_, err := exec.LookPath("guru")
 	if err != nil {
