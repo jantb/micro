@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"github.com/yuin/gopher-lua"
 	"github.com/zyedidia/clipboard"
+	"go/format"
 	"io"
 	"io/ioutil"
 	"os/exec"
@@ -1459,14 +1460,13 @@ func (v *View) Autocomplete(usePlugin bool) bool {
 					v.Cursor.Right()
 				}
 
-				def = def[5:strings.Index(def,")")]
+				def = def[5:strings.Index(def, ")")]
 				d := []string{}
 				for i, value := range strings.Split(def, ", ") {
 					d = append(d, fmt.Sprintf("$%d_%s$", i, value))
 				}
-				text  := val+"("+strings.Join(d, ", ")+")"
+				text := val + "(" + strings.Join(d, ", ") + ")"
 
-				TermMessage(text)
 				template.Open(v, text)
 
 				return
@@ -1858,15 +1858,7 @@ func (v *View) Format(usePlugin bool) bool {
 		return false
 	}
 	if v.Buf.FileType() == "go" {
-		_, err := exec.LookPath("goimports")
-		if err != nil {
-			_, _ = exec.Command("go", "get", "-u", "golang.org/x/tools/cmd/...").CombinedOutput()
-		}
-		cmd := exec.Command("goimports")
-		in, _ := cmd.StdinPipe()
-		fmt.Fprint(in, v.Buf.String())
-		in.Close()
-		data, err := cmd.CombinedOutput()
+		data, err := format.Source([]byte(v.Buf.String()))
 		if err != nil {
 			messenger.Message(fmt.Sprintf("%s %s", data, err))
 			return true
