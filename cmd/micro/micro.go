@@ -75,6 +75,7 @@ var (
 	// Event channel
 	events   chan tcell.Event
 	autosave chan bool
+	redraw   chan bool
 )
 
 // LoadInput determines which files should be loaded into buffers
@@ -389,7 +390,7 @@ func main() {
 	jobs = make(chan JobFunction, 100)
 	events = make(chan tcell.Event, 100)
 	autosave = make(chan bool)
-
+	redraw = make(chan bool, 10)
 	LoadPlugins()
 
 	// Load the syntax files, including the colorscheme
@@ -442,6 +443,8 @@ func main() {
 			continue
 		case <-autosave:
 			CurView().Save(true)
+		case <-redraw:
+			continue
 		case event = <-events:
 		}
 

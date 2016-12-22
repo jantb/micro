@@ -1693,12 +1693,12 @@ func (v *View) What(usePlugin bool) bool {
 		highlight := [][]int{}
 		if len(what.Enclosing) == 0 {
 			v.SetHighLight(&highlight)
-			v.DisplayView()
+			redraw <- true
 			return true
 		}
 		if what.Enclosing[0].Description != "identifier" {
 			v.SetHighLight(&highlight)
-			v.DisplayView()
+			redraw <- true
 			return true
 		}
 		highlight = append(highlight, []int{what.Enclosing[0].Start, what.Enclosing[0].End})
@@ -1710,7 +1710,7 @@ func (v *View) What(usePlugin bool) bool {
 			highlight = append(highlight, []int{offset, offset + highlight[0][1] - highlight[0][0]})
 		}
 		v.SetHighLight(&highlight)
-		v.DisplayView()
+		redraw <- true
 	}
 	if usePlugin {
 		return PostActionCall("What", v)
