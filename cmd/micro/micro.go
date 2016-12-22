@@ -390,7 +390,7 @@ func main() {
 	jobs = make(chan JobFunction, 100)
 	events = make(chan tcell.Event, 100)
 	autosave = make(chan bool)
-	redraw = make(chan bool, 10)
+	redraw = make(chan bool)
 	LoadPlugins()
 
 	// Load the syntax files, including the colorscheme
@@ -432,7 +432,6 @@ func main() {
 	for {
 		// Display everything
 		RedrawAll()
-
 		var event tcell.Event
 
 		// Check for new events

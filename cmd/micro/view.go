@@ -99,6 +99,10 @@ func (v *View) SetHighLight(highlight *[][]int) {
 	v.highlightLock.Lock()
 	v.highlight = highlight
 	v.highlightLock.Unlock()
+	select {
+	case redraw <- true:
+	default:
+	}
 }
 
 // GetHighLight Atomic get of Highlight
@@ -877,8 +881,8 @@ func (v *View) DisplayView() {
 				}
 			} else {
 				lineStyle = highlightStyle
+				offset := ByteOffset(charNum, v.Buf)
 				for _, value := range v.GetHighLight() {
-					offset := ByteOffset(charNum, v.Buf)
 					if offset >= value[0] && offset < value[1] {
 						if style, ok := colorscheme["highlight"]; ok {
 							lineStyle = style
