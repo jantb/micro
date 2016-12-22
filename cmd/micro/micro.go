@@ -56,8 +56,9 @@ var (
 	// Version is the version number or commit hash
 	// These variables should be set by the linker when compiling
 	Version = "0.0.0-unknown"
-	// Commit
+	// CommitHash for debug info
 	CommitHash  = "Unknown"
+	// CompileDate for debug info
 	CompileDate = "Unknown"
 
 	// L is the lua state
