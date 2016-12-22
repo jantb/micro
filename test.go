@@ -164,21 +164,18 @@ func loadExports(dir string) []string {
 		}
 		for name, object := range f.Scope.Objects {
 			if ast.IsExported(name) {
-				exports[name] = true
-				if object.Kind == ast.Fun {
-					fmt.Println(name)
-					f := object.Decl.(*ast.FuncDecl)
-					if len(f.Type.Params.List) > 0 {
-						if len(f.Type.Params.List[0].Names) > 0 {
-							fmt.Printf("%#v\n", f.Type.Params.List[0].Names[0].Name)
-							fmt.Printf("%#v\n", f.Type.Params.List[0].Names[0].Obj.Decl.(*ast.Field).Type)
-							os.Exit(0)
-							break
 
+				if object.Kind == ast.Fun {
+					f := object.Decl.(*ast.FuncDecl)
+					paramNames := []string{}
+					for _, value := range f.Type.Params.List {
+						for _, value := range value.Names {
+							paramNames = append(paramNames, value.Name)
 						}
 					}
-
+					name = fmt.Sprint(name + "(" + strings.Join(paramNames, ",") + ")")
 				}
+				exports[name] = true
 			}
 		}
 	}
