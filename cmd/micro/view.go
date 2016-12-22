@@ -90,12 +90,12 @@ type View struct {
 
 	splitNode *LeafNode
 
-	highlight     *[][]int
+	highlight     *[][]Loc
 	highlightLock sync.Mutex
 }
 
 // SetHighLight Atomic set of Highlight
-func (v *View) SetHighLight(highlight *[][]int) {
+func (v *View) SetHighLight(highlight *[][]Loc) {
 	v.highlightLock.Lock()
 	v.highlight = highlight
 	v.highlightLock.Unlock()
@@ -106,7 +106,7 @@ func (v *View) SetHighLight(highlight *[][]int) {
 }
 
 // GetHighLight Atomic get of Highlight
-func (v *View) GetHighLight() [][]int {
+func (v *View) GetHighLight() [][]Loc {
 	v.highlightLock.Lock()
 	defer v.highlightLock.Unlock()
 	return *v.highlight
@@ -131,7 +131,7 @@ func NewViewWidthHeight(buf *Buffer, w, h int) *View {
 	v.ToggleTabbar()
 
 	v.OpenBuffer(buf)
-	v.SetHighLight(&[][]int{})
+	v.SetHighLight(&[][]Loc{})
 	v.messages = make(map[string][]GutterMessage)
 
 	v.sline = Statusline{
@@ -881,9 +881,8 @@ func (v *View) DisplayView() {
 				}
 			} else {
 				lineStyle = highlightStyle
-				offset := ByteOffset(charNum, v.Buf)
 				for _, value := range v.GetHighLight() {
-					if offset >= value[0] && offset < value[1] {
+					if charNum.GreaterEqual(value[0]) && charNum.LessThan(value[1]) {
 						if style, ok := colorscheme["highlight"]; ok {
 							lineStyle = style
 						}

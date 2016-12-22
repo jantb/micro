@@ -1690,7 +1690,7 @@ func (v *View) What(usePlugin bool) bool {
 
 	if v.Buf.FileType() == "go" {
 		what := getWhat(v)
-		highlight := [][]int{}
+		highlight := [][]Loc{}
 		if len(what.Enclosing) == 0 {
 			v.SetHighLight(&highlight)
 			return true
@@ -1699,13 +1699,13 @@ func (v *View) What(usePlugin bool) bool {
 			v.SetHighLight(&highlight)
 			return true
 		}
-		highlight = append(highlight, []int{what.Enclosing[0].Start, what.Enclosing[0].End})
+		highlight = append(highlight, []Loc{FromByteOffset(what.Enclosing[0].Start, v.Buf), FromByteOffset(what.Enclosing[0].End, v.Buf)})
 		for _, ids := range what.SameIDs {
 			split := strings.Split(ids, ":")
 			y, _ := strconv.Atoi(split[1])
 			x, _ := strconv.Atoi(split[2])
 			offset := ByteOffset(Loc{X: x - 1, Y: y - 1}, v.Buf)
-			highlight = append(highlight, []int{offset, offset + highlight[0][1] - highlight[0][0]})
+			highlight = append(highlight, []Loc{FromByteOffset(offset, v.Buf), FromByteOffset(offset+ByteOffset(highlight[0][1], v.Buf)-ByteOffset(highlight[0][0], v.Buf), v.Buf)})
 		}
 		v.SetHighLight(&highlight)
 	}
