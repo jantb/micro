@@ -9,6 +9,7 @@ import (
 	"github.com/mattn/go-runewidth"
 	"github.com/mitchellh/go-homedir"
 	"github.com/zyedidia/tcell"
+	"sync"
 )
 
 type ViewType int
@@ -89,7 +90,22 @@ type View struct {
 
 	splitNode *LeafNode
 
-	highlight [][]int
+	highlight     *[][]int
+	highlightLock sync.Mutex
+}
+
+// SetHighLight Atomic set of Highlight
+func (v *View) SetHighLight(highlight *[][]int) {
+	v.highlightLock.Lock()
+	v.highlight = highlight
+	v.highlightLock.Unlock()
+}
+
+// GetHighLight Atomic get of Highlight
+func (v *View) GetHighLight() [][]int {
+	v.highlightLock.Lock()
+	defer v.highlightLock.Unlock()
+	return *v.highlight
 }
 
 // NewView returns a new fullscreen view
@@ -111,7 +127,7 @@ func NewViewWidthHeight(buf *Buffer, w, h int) *View {
 	v.ToggleTabbar()
 
 	v.OpenBuffer(buf)
-
+	v.SetHighLight(&[][]int{})
 	v.messages = make(map[string][]GutterMessage)
 
 	v.sline = Statusline{
@@ -440,7 +456,7 @@ func (v *View) MoveToMouseClick(x, y int) {
 	v.Cursor.Y = y
 	v.Cursor.LastVisualX = v.Cursor.GetVisualX()
 	cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
-	v.What(false)
+	go v.What(false)
 }
 
 // HandleEvent handles an event passed by the main loop
@@ -861,7 +877,7 @@ func (v *View) DisplayView() {
 				}
 			} else {
 				lineStyle = highlightStyle
-				for _, value := range v.highlight {
+				for _, value := range v.GetHighLight() {
 					offset := ByteOffset(charNum, v.Buf)
 					if offset >= value[0] && offset < value[1] {
 						if style, ok := colorscheme["highlight"]; ok {
