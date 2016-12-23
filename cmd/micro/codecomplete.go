@@ -1,24 +1,11 @@
-// +build ignore
-
-// Copyright 2013 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
-
-// Command mkindex creates the file "pkgindex.go" containing an index of the Go
-// standard library. The file is intended to be built as part of the imports
-// package, so that the package may be used in environments where a GOROOT is
-// not available (such as App Engine).
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"go/ast"
 	"go/build"
-	"go/format"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -31,9 +18,14 @@ var (
 	exports  = make(map[string][]string)
 )
 
-func main() {
-	ctx := build.Default
+type pkg struct {
+	importpath string // full pkg import path, e.g. "net/http"
+	dir        string // absolute file path to pkg directory e.g. "/usr/lib/go/src/fmt"
+	exports    []string
+}
 
+func getCodeComplete() {
+	ctx := build.Default
 	for _, path := range ctx.SrcDirs() {
 		f, err := os.Open(path)
 		if err != nil {
@@ -53,60 +45,18 @@ func main() {
 		}
 	}
 	// Populate exports global.
-	for _, ps := range pkgIndex {
-		for _, p := range ps {
+	for psi, ps := range pkgIndex {
+		for pi, p := range ps {
 			e := loadExports(p.dir)
 			if e != nil {
-				exports[p.dir] = e
+				pkgIndex[psi][pi].exports = e
 			}
 		}
 	}
 
 	// Construct source file.
-	fmt.Println(pkgIndex["gopher-lua"][0].importpath)
-	fmt.Println(exports[pkgIndex["gopher-lua"][0].dir])
-	var buf bytes.Buffer
-	fmt.Fprint(&buf, pkgIndexHead)
-	fmt.Fprintf(&buf, "var pkgIndexMaster = %#v\n", pkgIndex)
-	fmt.Fprintf(&buf, "var exportsMaster = %#v\n", exports)
-	src := buf.Bytes()
-
-	// Replace main.pkg type name with pkg.
-	src = bytes.Replace(src, []byte("main.pkg"), []byte("pkg"), -1)
-	// Replace actual GOROOT with "/go".
-	src = bytes.Replace(src, []byte(ctx.GOROOT), []byte("/go"), -1)
-	// Add some line wrapping.
-	src = bytes.Replace(src, []byte("}, "), []byte("},\n"), -1)
-	src = bytes.Replace(src, []byte("true, "), []byte("true,\n"), -1)
-
-	var err error
-	src, err = format.Source(src)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Write out source file.
-	err = ioutil.WriteFile("pkgindex.go", src, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-const pkgIndexHead = `package imports
-
-func init() {
-	pkgIndexOnce.Do(func() {
-		pkgIndex.m = pkgIndexMaster
-	})
-	loadExports = func(dir string) map[string]bool {
-		return exportsMaster[dir]
-	}
-}
-`
-
-type pkg struct {
-	importpath string // full pkg import path, e.g. "net/http"
-	dir        string // absolute file path to pkg directory e.g. "/usr/lib/go/src/fmt"
+	fmt.Println(pkgIndex["fmt"][0].dir)
+	fmt.Println(pkgIndex["fmt"][0].exports)
 }
 
 var fset = token.NewFileSet()
@@ -168,9 +118,9 @@ func loadExports(dir string) []string {
 				if object.Kind == ast.Fun {
 					f := object.Decl.(*ast.FuncDecl)
 					paramNames := []string{}
-					for _, value := range f.Type.Params.List {
-						for _, value := range value.Names {
-							paramNames = append(paramNames, value.Name)
+					for x, value := range f.Type.Params.List {
+						for i, value := range value.Names {
+							paramNames = append(paramNames, fmt.Sprintf("$%d_%s$", x+i, value.Name))
 						}
 					}
 					name = fmt.Sprint(name + "(" + strings.Join(paramNames, ",") + ")")
