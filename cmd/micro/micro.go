@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/go-errors/errors"
-	"github.com/layeh/gopher-luar"
+	"layeh.com/gopher-luar"
 	"github.com/mattn/go-isatty"
 	"github.com/mitchellh/go-homedir"
 	"github.com/yuin/gopher-lua"
@@ -401,7 +401,7 @@ func main() {
 		for _, v := range t.views {
 			v.Buf.FindFileType()
 			v.Buf.UpdateRules()
-			for _, pl := range loadedPlugins {
+			for pl := range loadedPlugins {
 				_, err := Call(pl+".onViewOpen", v)
 				if err != nil && !strings.HasPrefix(err.Error(), "function does not exist") {
 					TermMessage(err)
