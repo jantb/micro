@@ -22,8 +22,16 @@ type pkg struct {
 	exports    []string
 }
 
-func GetCodeComplete(substring string) {
-
+func GetCodeComplete(substring string) []string {
+	ReindexCodeComplete()
+	pkgs := pkgIndex[substring]
+	ret := []string{}
+	for _, value := range pkgs {
+		for _, value := range value.exports {
+			ret = append(ret, value)
+		}
+	}
+	return ret
 }
 
 func ReindexCodeComplete() {
