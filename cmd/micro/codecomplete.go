@@ -6,7 +6,6 @@ import (
 	"go/build"
 	"go/parser"
 	"go/token"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -15,7 +14,6 @@ import (
 
 var (
 	pkgIndex = make(map[string][]pkg)
-	exports  = make(map[string][]string)
 )
 
 type pkg struct {
@@ -24,27 +22,28 @@ type pkg struct {
 	exports    []string
 }
 
-func getCodeComplete() {
+func GetCodeComplete(substring string) {
+
+}
+
+func ReindexCodeComplete() {
 	ctx := build.Default
-	for _, path := range ctx.SrcDirs() {
-		f, err := os.Open(path)
+	for _, p := range ctx.SrcDirs() {
+		f, err := os.Open(p)
 		if err != nil {
-			log.Print(err)
 			continue
 		}
 		children, err := f.Readdir(-1)
 		f.Close()
 		if err != nil {
-			log.Print(err)
 			continue
 		}
 		for _, child := range children {
 			if child.IsDir() {
-				loadPkg(path, child.Name())
+				loadPkg(p, child.Name())
 			}
 		}
 	}
-	// Populate exports global.
 	for psi, ps := range pkgIndex {
 		for pi, p := range ps {
 			e := loadExports(p.dir)
@@ -53,10 +52,6 @@ func getCodeComplete() {
 			}
 		}
 	}
-
-	// Construct source file.
-	fmt.Println(pkgIndex["fmt"][0].dir)
-	fmt.Println(pkgIndex["fmt"][0].exports)
 }
 
 var fset = token.NewFileSet()
@@ -103,13 +98,11 @@ func loadExports(dir string) []string {
 		if strings.Contains(err.Error(), "no buildable Go source files in") {
 			return nil
 		}
-		log.Printf("could not import %q: %v", dir, err)
 		return nil
 	}
 	for _, file := range buildPkg.GoFiles {
 		f, err := parser.ParseFile(fset, filepath.Join(dir, file), nil, 0)
 		if err != nil {
-			log.Printf("could not parse %q: %v", file, err)
 			continue
 		}
 		for name, object := range f.Scope.Objects {
