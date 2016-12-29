@@ -17,8 +17,8 @@ var (
 )
 
 type pkg struct {
-	importpath string // full pkg import path, e.g. "net/http"
-	dir        string // absolute file path to pkg directory e.g. "/usr/lib/go/src/fmt"
+	importpath string
+	dir        string
 	exports    []string
 }
 
@@ -36,8 +36,7 @@ func GetCodeComplete(substring string) []string {
 				}
 			}
 		}
-	}
-	if len(split) == 1 {
+	} else if len(split) == 1 {
 		for key, value := range pkgIndex {
 			for _, value := range value {
 				for _, value := range value.exports {
