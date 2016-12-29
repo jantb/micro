@@ -24,13 +24,39 @@ type pkg struct {
 
 func GetCodeComplete(substring string) []string {
 	ReindexCodeComplete()
-	pkgs := pkgIndex[substring]
+	split := strings.Split(substring, ".")
 	ret := []string{}
-	for _, value := range pkgs {
-		for _, value := range value.exports {
-			ret = append(ret, value)
+	if len(split) == 2 {
+		for _, value := range pkgIndex[split[0]] {
+			for _, value := range value.exports {
+				if strings.Index(value, split[1]) > -1 {
+					ret = append(ret, value)
+				}
+			}
 		}
 	}
+	if len(split) == 1 {
+		for _, value := range pkgIndex {
+			for _, value := range value {
+				for _, value := range value.exports {
+					if strings.Index(value, substring) > -1 {
+						ret = append(ret, value)
+					}
+				}
+			}
+		}
+	} else {
+		for key, value := range pkgIndex {
+			if strings.Index(key, substring) > -1 {
+				for _, value := range value {
+					for _, value := range value.exports {
+						ret = append(ret, value)
+					}
+				}
+			}
+		}
+	}
+
 	return ret
 }
 
@@ -124,7 +150,13 @@ func loadExports(dir string) []string {
 							paramNames = append(paramNames, fmt.Sprintf("$%d_%s$", x+i, value.Name))
 						}
 					}
-					name = fmt.Sprint(name + "(" + strings.Join(paramNames, ",") + ")")
+					name = fmt.Sprint("func,," + name + "(" + strings.Join(paramNames, ",") + ")" + ",,")
+				} else if object.Kind == ast.Var {
+					name = fmt.Sprint("var,," + name + ",,")
+				} else if object.Kind == ast.Typ {
+					name = fmt.Sprint("type,," + name + ",,")
+				} else if object.Kind == ast.Con {
+					name = fmt.Sprint("const,," + name + ",,")
 				}
 				exports[name] = true
 			}
