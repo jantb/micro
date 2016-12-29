@@ -23,7 +23,9 @@ type pkg struct {
 }
 
 func GetCodeComplete(substring string) []string {
-	ReindexCodeComplete()
+	if len(pkgIndex) == 0 {
+		ReindexCodeComplete()
+	}
 	split := strings.Split(substring, ".")
 	ret := []string{}
 	if len(split) == 2 {
@@ -36,11 +38,11 @@ func GetCodeComplete(substring string) []string {
 		}
 	}
 	if len(split) == 1 {
-		for _, value := range pkgIndex {
+		for key, value := range pkgIndex {
 			for _, value := range value {
 				for _, value := range value.exports {
 					if strings.Index(value, substring) > -1 {
-						ret = append(ret, value)
+						ret = append(ret, value[0:strings.Index(value, ",,")+2]+key+"."+value[strings.Index(value, ",,")+2:])
 					}
 				}
 			}
