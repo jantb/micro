@@ -320,7 +320,8 @@ func (v *View) ExtractVariable(usePlugin bool) bool {
 	}
 	if v.Buf.FileType() == "go" {
 		what := getWhat(v)
-
+		j, _ := json.MarshalIndent(what, "", "    ")
+		TermMessage(string(j))
 		if what.Enclosing[0].Description == "identifier" {
 			desc := getDescription(v)
 			j, _ := json.MarshalIndent(desc, "", "    ")
@@ -329,6 +330,15 @@ func (v *View) ExtractVariable(usePlugin bool) bool {
 			end := FromByteOffset(what.Enclosing[0].End, v.Buf)
 			identifier := v.Buf.Substr(start, end)
 			if strings.HasPrefix(desc.Value.Type, "func") {
+				for _, value := range what.Enclosing {
+					if strings.HasPrefix(value.Description, "function") {
+						start = FromByteOffset(value.Start, v.Buf)
+						end = FromByteOffset(value.End, v.Buf)
+						identifier = v.Buf.Substr(start, end)
+						v.Buf.Remove(start, end)
+						break
+					}
+				}
 				split := strings.Split(desc.Value.Type, ") (")
 				if len(split) == 2 {
 					ret := split[1][:len(split[1])-1]
