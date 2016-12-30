@@ -322,10 +322,26 @@ func (v *View) ExtractVariable(usePlugin bool) bool {
 		what := getWhat(v)
 
 		if what.Enclosing[0].Description == "identifier" {
-			//desc := getDescription(v)
+			desc := getDescription(v)
+			j, _ := json.MarshalIndent(desc, "", "    ")
+			TermMessage(string(j))
 			start := FromByteOffset(what.Enclosing[0].Start, v.Buf)
 			end := FromByteOffset(what.Enclosing[0].End, v.Buf)
 			identifier := v.Buf.Substr(start, end)
+			if strings.HasPrefix(desc.Value.Type, "func") {
+				split := strings.Split(desc.Value.Type, ") (")
+				if len(split) == 2 {
+					ret := split[1][:len(split[1])-1]
+					split = strings.Split(ret, ",")
+					vars := []string{}
+					for i, value := range split {
+						vars = append(vars, fmt.Sprintf("$%d_%s$", i, value))
+					}
+					template.Open(v, fmt.Sprintf("%s := %s", strings.Join(vars, ", "), identifier))
+					return usePlugin
+				}
+			}
+
 			v.Buf.Remove(start, end)
 			template.Open(v, fmt.Sprintf("$0_identifier$ := %s", identifier))
 		} else if what.Enclosing[0].Description == "basic literal" {
