@@ -329,7 +329,7 @@ func (v *View) ExtractVariable(usePlugin bool) bool {
 			start := FromByteOffset(what.Enclosing[0].Start, v.Buf)
 			end := FromByteOffset(what.Enclosing[0].End, v.Buf)
 			identifier := v.Buf.Substr(start, end)
-			if desc.Detail == "type" && strings.HasPrefix(desc.Value.Type, "func") {
+			if desc.Detail != "type" && strings.HasPrefix(desc.Value.Type, "func") {
 				for _, value := range what.Enclosing {
 					if strings.HasPrefix(value.Description, "function") {
 						start = FromByteOffset(value.Start, v.Buf)
