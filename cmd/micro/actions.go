@@ -313,6 +313,39 @@ func (v *View) Template(usePlugin bool) bool {
 	return true
 }
 
+//ExtractVariable creates a local variable
+func (v *View) ExtractVariable(usePlugin bool) bool {
+	if usePlugin && !PreActionCall("Template", v) {
+		return false
+	}
+	if v.Buf.FileType() == "go" {
+		what := getWhat(v)
+
+		if what.Enclosing[0].Description == "identifier" {
+			//desc := getDescription(v)
+			start := FromByteOffset(what.Enclosing[0].Start, v.Buf)
+			end := FromByteOffset(what.Enclosing[0].End, v.Buf)
+			identifier := v.Buf.Substr(start, end)
+			v.Buf.Remove(start, end)
+			template.Open(v, fmt.Sprintf("$0_identifier$ := %s", identifier))
+		} else if what.Enclosing[0].Description == "basic literal" {
+			start := FromByteOffset(what.Enclosing[0].Start, v.Buf)
+			end := FromByteOffset(what.Enclosing[0].End, v.Buf)
+			identifier := v.Buf.Substr(start, end)
+			v.Buf.Remove(start, end)
+			template.Open(v, fmt.Sprintf("$0_identifier$ := %s", identifier))
+		} else {
+			TermMessage("@" + what.Enclosing[0].Description + "@")
+		}
+
+	}
+
+	if usePlugin {
+		return PostActionCall("Template", v)
+	}
+	return true
+}
+
 // SelectWordRight selects the word under the cursor
 func (v *View) SelectWord(usePlugin bool) bool {
 	if usePlugin && !PreActionCall("SelectWord", v) {
@@ -1660,33 +1693,15 @@ func (v *View) Describe(usePlugin bool) bool {
 		} `json:"value"`
 	}
 	if v.Buf.FileType() == "go" {
-		offset := ByteOffset(v.Cursor.Loc, v.Buf)
-		_, err := exec.LookPath("guru")
-		if err != nil {
-			_, _ = exec.Command("go", "get", "-u", "golang.org/x/tools/cmd/...").CombinedOutput()
-		}
-		cmd := exec.Command("guru", "-modified", "-json", "describe", fmt.Sprintf("%s:#%d", v.Buf.Path, offset))
-		in, _ := cmd.StdinPipe()
-		fmt.Fprint(in, v.Buf.GetName()+"\n")
-		fmt.Fprintf(in, "%d\n", len(v.Buf.String()))
-		fmt.Fprint(in, v.Buf.String())
-		in.Close()
-		data, err := cmd.CombinedOutput()
-		if err != nil {
-			messenger.Message(fmt.Sprintf("%s %s", data, err))
-			return true
-		}
-		var info = Info{}
-		err = json.Unmarshal(data, &info)
-		if err != nil {
-			messenger.Message(string(data))
-		} else {
-			autocomplete.OpenNoPrompt(func(v *View) (messages Messages) {
-				messages = Messages{}
-				messages = append(messages, Message{MessageToDisplay: fmt.Sprintf("%s %s", strings.TrimSpace(info.Desc), info.Value.Type)})
-				return messages
-			}, nil, nil, v)
-		}
+		description := getDescription(v)
+
+		autocomplete.OpenNoPrompt(func(v *View) (messages Messages) {
+			messages = Messages{}
+			if description.Detail == "value" {
+				messages = append(messages, Message{MessageToDisplay: fmt.Sprintf("%s %s", strings.TrimSpace(description.Desc), description.Value.Type)})
+			}
+			return messages
+		}, nil, nil, v)
 	}
 	if usePlugin {
 		return PostActionCall("Describe", v)

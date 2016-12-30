@@ -33,6 +33,34 @@ func getWhat(v *View) serial.What {
 
 }
 
+func getDescription(v *View) serial.Describe {
+	v.Cursor.Relocate()
+	offset := ByteOffset(v.Cursor.Loc, v.Buf)
+	_, err := exec.LookPath("guru")
+	if err != nil {
+		_, _ = exec.Command("go", "get", "-u", "golang.org/x/tools/cmd/...").CombinedOutput()
+	}
+	cmd := exec.Command("guru", "-modified", "-json", "describe", fmt.Sprintf("%s:#%d", v.Buf.Path, offset))
+	in, _ := cmd.StdinPipe()
+	fmt.Fprint(in, v.Buf.GetName()+"\n")
+	fmt.Fprintf(in, "%d\n", len(v.Buf.String()))
+	fmt.Fprint(in, v.Buf.String())
+	in.Close()
+	data, err := cmd.CombinedOutput()
+	if err != nil {
+		messenger.Message(fmt.Sprintf("%s %s", data, err))
+		return serial.Describe{}
+	}
+	desc := serial.Describe{}
+	err = json.Unmarshal(data, &desc)
+	if err != nil {
+		messenger.Message(string(data))
+	}
+
+	err = json.Unmarshal(data, &desc)
+	return desc
+}
+
 func getImplements(v *View) serial.Implements {
 	offset := ByteOffset(v.Cursor.Loc, v.Buf)
 	_, err := exec.LookPath("guru")

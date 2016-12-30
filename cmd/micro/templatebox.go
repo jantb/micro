@@ -52,6 +52,7 @@ func (s selects) Less(i, j int) bool {
 func (a *TemplateBox) Open(v *View, template string) {
 	a.open = true
 	a.template = template
+	v.Cursor.Relocate()
 	v.Buf.Insert(v.Cursor.Loc, a.template)
 
 	text := a.template

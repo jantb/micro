@@ -102,6 +102,7 @@ var bindingActions = map[string]func(*View, bool) bool{
 	"What":                (*View).What,
 	"Suggest":             (*View).Suggest,
 	"Template":            (*View).Template,
+	"ExtractVariable":     (*View).ExtractVariable,
 
 	// This was changed to InsertNewline but I don't want to break backwards compatibility
 	"InsertEnter": (*View).InsertNewline,
@@ -430,6 +431,7 @@ func DefaultBindings() map[string]string {
 		"CtrlJ":          "PlayMacro",
 		"F2":             "GotoGutterMesssage",
 		"AltEnter":       "Suggest",
+		"Alt-v":          "ExtractVariable",
 
 		"AltL":      "Format",
 		"CtrlL":     "Format",
