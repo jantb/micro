@@ -41,6 +41,7 @@ var bindingActions = map[string]func(*View, bool) bool{
 	"Delete":              (*View).Delete,
 	"InsertTab":           (*View).InsertTab,
 	"Save":                (*View).Save,
+	"SaveAs":              (*View).SaveAs,
 	"Find":                (*View).Find,
 	"FindNext":            (*View).FindNext,
 	"FindPrevious":        (*View).FindPrevious,
@@ -361,8 +362,19 @@ func BindKey(k, v string) {
 	if v == "ToggleHelp" {
 		helpBinding = k
 	}
+	if helpBinding == k && v != "ToggleHelp" {
+		helpBinding = ""
+	}
 
 	actionNames := strings.Split(v, ",")
+	if actionNames[0] == "UnbindKey" {
+		delete(bindings, key)
+		if len(actionNames) == 1 {
+			actionNames = make([]string, 0, 0)
+		} else {
+			actionNames = append(actionNames[:0], actionNames[1:]...)
+		}
+	}
 	actions := make([]func(*View, bool) bool, 0, len(actionNames))
 	for _, actionName := range actionNames {
 		actions = append(actions, findAction(actionName))
