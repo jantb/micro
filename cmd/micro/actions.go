@@ -1539,6 +1539,7 @@ func (v *View) CallStack(usePlugin bool) bool {
 			return messages
 		}, func(message Message) {
 			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+			v.Buf.Save()
 			v.Open(strings.Split(string(message.Value2), ":")[0])
 			x, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[2])
 			y, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[1])
@@ -1570,6 +1571,7 @@ func (v *View) Callers(usePlugin bool) bool {
 			return messages
 		}, func(message Message) {
 			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+			v.Buf.Save()
 			v.Open(strings.Split(string(message.Value2), ":")[0])
 			x, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[2])
 			y, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[1])
@@ -1603,6 +1605,7 @@ func (v *View) PointsTo(usePlugin bool) bool {
 			return messages
 		}, func(message Message) {
 			cursorLocations.AddLocation(CursorLocation{X: v.Buf.Cursor.X, Y: v.Buf.Cursor.Y, Path: v.Buf.Path})
+			v.Buf.Save()
 			v.Open(strings.Split(string(message.Value2), ":")[0])
 			x, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[2])
 			y, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[1])
@@ -1633,6 +1636,7 @@ func (v *View) Implements(usePlugin bool) bool {
 			}
 			return messages
 		}, func(message Message) {
+			v.Buf.Save()
 			v.Open(strings.Split(string(message.Value2), ":")[0])
 			x, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[2])
 			y, _ := strconv.Atoi(strings.Split(string(message.Value2), ":")[1])
@@ -1688,6 +1692,7 @@ func (v *View) Definition(usePlugin bool) bool {
 	}
 	if v.Buf.FileType() == "go" {
 		definition := getDefinition(v)
+		v.Buf.Save()
 		v.Open(strings.Split(definition.ObjPos, ":")[0])
 		x, _ := strconv.Atoi(strings.Split(definition.ObjPos, ":")[2])
 		y, _ := strconv.Atoi(strings.Split(definition.ObjPos, ":")[1])
@@ -1786,6 +1791,7 @@ func (v *View) Referrers(usePlugin bool) bool {
 				return messages
 			}, func(message Message) {
 				l := string(message.Value2)
+				v.Buf.Save()
 				v.Open(strings.Split(l, ":")[0])
 				x, _ := strconv.Atoi(strings.Split(l, ":")[2])
 				y, _ := strconv.Atoi(strings.Split(l, ":")[1])
@@ -1929,6 +1935,7 @@ func (v *View) NextLoc(usePlugin bool) bool {
 	}
 	next := cursorLocations.GetNext()
 	if next.Path != "" {
+		v.Buf.Save()
 		v.Open(next.Path)
 	}
 	v.Buf.Cursor.X = next.X
@@ -1947,6 +1954,7 @@ func (v *View) PrevLoc(usePlugin bool) bool {
 	}
 	prev := cursorLocations.GetPrev()
 	if prev.Path != "" {
+		v.Buf.Save()
 		v.Open(prev.Path)
 	}
 	v.Buf.Cursor.X = prev.X
