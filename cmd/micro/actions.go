@@ -320,12 +320,8 @@ func (v *View) ExtractVariable(usePlugin bool) bool {
 	}
 	if v.Buf.FileType() == "go" {
 		what := getWhat(v)
-		j, _ := json.MarshalIndent(what, "", "    ")
-		TermMessage(string(j))
 		if what.Enclosing[0].Description == "identifier" {
 			desc := getDescription(v)
-			j, _ := json.MarshalIndent(desc, "", "    ")
-			TermMessage(string(j))
 			start := FromByteOffset(what.Enclosing[0].Start, v.Buf)
 			end := FromByteOffset(what.Enclosing[0].End, v.Buf)
 			identifier := v.Buf.Substr(start, end)
