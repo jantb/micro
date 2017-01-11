@@ -1036,7 +1036,7 @@ func (v *View) Copy(usePlugin bool) bool {
 	}
 
 	if v.Cursor.HasSelection() {
-		clipboard.WriteAll(v.Cursor.GetSelection(), "clipboard")
+		v.Cursor.CopySelection("clipboard")
 		v.freshClip = true
 		messenger.Message("Copied selection")
 	}
@@ -1088,7 +1088,7 @@ func (v *View) Cut(usePlugin bool) bool {
 	}
 
 	if v.Cursor.HasSelection() {
-		clipboard.WriteAll(v.Cursor.GetSelection(), "clipboard")
+		v.Cursor.CopySelection("clipboard")
 		v.Cursor.DeleteSelection()
 		v.Cursor.ResetSelection()
 		v.freshClip = true
